@@ -782,6 +782,7 @@ def main():
     # The mask is True for parameters that should be decayed.
     def decay_mask_fn(params):
         flat_params = traverse_util.flatten_dict(params)
+        layer_norm_candidates = ['layernorm', 'layer_norm']
         layer_norm_named_params = set([layer[-2:] for layer_norm_name in layer_norm_candidates
                                        for layer in flat_params.keys() if
                                        layer_norm_name in ''.join(layer).lower()])
