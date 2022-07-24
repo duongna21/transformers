@@ -787,8 +787,12 @@ def main():
                                        for layer in flat_params.keys() if
                                        layer_norm_name in ''.join(layer).lower()])
         print('\n\nlayer_norm_named_params: ', layer_norm_named_params)
+        # flat_mask = {
+        #     path: (path[-1] != "bias" and path[-2:] not in [("layer_norm", "scale"), ("final_layer_norm", "scale")])
+        #     for path in flat_params
+        # }
         flat_mask = {
-            path: (path[-1] != "bias" and path[-2:] not in [("layer_norm", "scale"), ("final_layer_norm", "scale")])
+            path: (path[-1] != "bias" and path[-2:] not in layer_norm_named_params)
             for path in flat_params
         }
         print('\n\nflat_mask: ', flat_mask)
