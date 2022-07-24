@@ -782,10 +782,15 @@ def main():
     # The mask is True for parameters that should be decayed.
     def decay_mask_fn(params):
         flat_params = traverse_util.flatten_dict(params)
+        layer_norm_named_params = set([layer[-2:] for layer_norm_name in layer_norm_candidates
+                                       for layer in flat_params.keys() if
+                                       layer_norm_name in ''.join(layer).lower()])
+        print('\n\nlayer_norm_named_params: ', layer_norm_named_params)
         flat_mask = {
             path: (path[-1] != "bias" and path[-2:] not in [("layer_norm", "scale"), ("final_layer_norm", "scale")])
             for path in flat_params
         }
+        print('\n\nflat_mask: ', flat_mask)
         return traverse_util.unflatten_dict(flat_mask)
 
     # create adam optimizer
