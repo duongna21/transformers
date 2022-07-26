@@ -458,6 +458,8 @@ def main():
             keep_in_memory=False,
             use_auth_token=True if model_args.use_auth_token else None,
         )
+        print('\ndataset:', dataset)
+        print('\ndataset["train"][0]:', dataset["train"][0])
     else:
         data_files = {}
         if data_args.train_file is not None:
