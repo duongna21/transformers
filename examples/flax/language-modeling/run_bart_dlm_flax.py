@@ -404,6 +404,15 @@ class FlaxDataCollatorForBartDenoisingLM:
 
         return new_input_ids, labels
 
+def generate_batch_splits(samples_idx: np.ndarray, batch_size: int) -> np.ndarray:
+    num_samples = len(samples_idx)
+    samples_to_remove = num_samples % batch_size
+
+    if samples_to_remove != 0:
+        samples_idx = samples_idx[:-samples_to_remove]
+    sections_split = num_samples // batch_size
+    batch_idx = np.split(samples_idx, sections_split)
+    return batch_idx
 
 def write_train_metric(summary_writer, train_metrics, train_time, step):
     summary_writer.scalar("train_time", train_time, step)
