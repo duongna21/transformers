@@ -314,27 +314,28 @@ class FlaxDataCollatorForBartDenoisingLM:
         end_sentence_mask = input_ids == self.tokenizer.pad_token_id
         sentence_ends = np.argwhere(end_sentence_mask)
         sentence_ends[:, 1] += 1
-        num_sentences = np.unique(sentence_ends[:, 0], return_counts=True)[1]
+        example_has_multiple_sentences, num_sentences = np.unique(sentence_ends[:, 0], return_counts=True)
+        num_sentences_map = {sent_idx: count for sent_idx, count in zip(example_has_multiple_sentences, num_sentences)}
+
         num_to_permute = np.ceil(num_sentences * self.permute_sentence_ratio).astype(int)
+        num_to_permute_map = {sent_idx: count for sent_idx, count in
+                              zip(example_has_multiple_sentences, num_to_permute)}
+
         sentence_ends = np.split(sentence_ends[:, 1], np.unique(sentence_ends[:, 0], return_index=True)[1][1:])
+        sentence_ends_map = {sent_idx: count for sent_idx, count in zip(example_has_multiple_sentences, sentence_ends)}
 
         for i in range(input_ids.shape[0]):
-            # shuffle sentences
-            try:
-                substitutions = np.random.permutation(num_sentences[i])[:num_to_permute[i]]
-            except:
-                print('\n\n\ni: ', i, input_ids.shape)
-                print('len(sentence): ', len(num_sentences))
-                print('num_sentences[i]: ', num_sentences[i])
-                print('num_to_permute[i]: ', num_to_permute[i])
-            ordering = np.arange(0, num_sentences[i])
-            ordering[substitutions] = substitutions[np.random.permutation(num_to_permute[i])]
+            if i not in example_has_multiple_sentences:
+                continue
+            substitutions = np.random.permutation(num_sentences_map[i])[:num_to_permute_map[i]]
+            ordering = np.arange(0, num_sentences_map[i])
+            ordering[substitutions] = substitutions[np.random.permutation(num_to_permute_map[i])]
 
             # write shuffled sentences into results
             index = 0
             for j in ordering:
-                sentence = input_ids[i, (sentence_ends[i][j - 1] if j > 0 else 0) : sentence_ends[i][j]]
-                results[i, index : index + sentence.shape[0]] = sentence
+                sentence = input_ids[i, (sentence_ends_map[i][j - 1] if j > 0 else 0): sentence_ends_map[i][j]]
+                results[i, index: index + sentence.shape[0]] = sentence
                 index += sentence.shape[0]
         return results
 
