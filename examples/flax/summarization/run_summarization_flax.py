@@ -460,6 +460,9 @@ def main():
         )
         print('\ndataset:', dataset)
         print('\ndataset["train"][0]:', dataset["train"][0])
+        print('\ndataset["train"][0]["document"]:', dataset["train"][0]["document"])
+        print('\ndataset["train"][0]["summary"]:', dataset["train"][0]["summary"])
+        print('\ndataset["train"][0]["id"]:', dataset["train"][0]["id"])
     else:
         data_files = {}
         if data_args.train_file is not None:
