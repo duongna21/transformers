@@ -15,7 +15,6 @@
 # limitations under the License.
 """
 Pretraining the library models for denoising language modeling on a text file or a dataset.
-
 Here is the full list of checkpoints on the hub that can be pretrained by this script:
 https://huggingface.co/models?filter=bart
 """
@@ -59,6 +58,7 @@ from transformers import (
     is_tensorboard_available,
     set_seed,
 )
+from transformers.models.bart.modeling_flax_bart import shift_tokens_right
 from transformers.utils import get_full_repo_name, send_example_telemetry
 
 
@@ -265,8 +265,6 @@ class FlaxDataCollatorForBartDenoisingLM:
             Mean parameter of Poisson distribution used to generate span-lengths to be masked
         permute_sentence_ratio (:obj:`float`):
             Ratio of sentences to be permuted in each document
-        pad_token_id: (:obj:`int`):
-            The pad token id of the model
         decoder_start_token_id: (:obj:`int):
             The decoder start token id of the model
     """
@@ -275,7 +273,6 @@ class FlaxDataCollatorForBartDenoisingLM:
     mask_ratio: float
     poisson_lambda: float
     permute_sentence_ratio: float
-    pad_token_id: int
     decoder_start_token_id: int
 
     def __post_init__(self):
@@ -289,11 +286,9 @@ class FlaxDataCollatorForBartDenoisingLM:
         batch = BatchEncoding(
             {k: np.array([examples[i][k] for i in range(len(examples))]) for k, v in examples[0].items()}
         )
-
         batch["labels"] = batch["input_ids"].copy()
-        batch["decoder_input_ids"] = self.shift_tokens_right(batch["labels"],
-                                                             self.pad_token_id, self.decoder_start_token_id)
-
+        batch["decoder_input_ids"] = shift_tokens_right(batch["labels"],
+                                                             self.tokenizer.pad_token_id, self.decoder_start_token_id)
         # permuting sentences
         do_permute = False
         if self.permute_sentence_ratio > 0.0:
@@ -304,6 +299,9 @@ class FlaxDataCollatorForBartDenoisingLM:
         if self.mask_ratio:
             batch["input_ids"], batch["labels"] = self.span_mask_tokens(batch["input_ids"], batch["labels"], do_permute)
 
+        # ignore pad tokens
+        batch['attention_mask'] = (batch["input_ids"] != self.tokenizer.pad_token_id).astype(int)
+        batch['decoder_attention_mask'] = (batch["decoder_input_ids"] != self.tokenizer.pad_token_id).astype(int)
         return batch
 
     def permute_sentences(self, input_ids):
@@ -313,8 +311,8 @@ class FlaxDataCollatorForBartDenoisingLM:
         results = input_ids.copy()
 
         # find end locations of sentences
-        eos_indices = input_ids == self.tokenizer.eos_token_id
-        sentence_ends = np.argwhere(eos_indices)
+        end_sentence_mask = input_ids == self.tokenizer.pad_token_id
+        sentence_ends = np.argwhere(end_sentence_mask)
         sentence_ends[:, 1] += 1
         num_sentences = np.unique(sentence_ends[:, 0], return_counts=True)[1]
         num_to_permute = np.ceil(num_sentences * self.permute_sentence_ratio).astype(int)
@@ -406,45 +404,6 @@ class FlaxDataCollatorForBartDenoisingLM:
 
         return new_input_ids, labels
 
-    def shift_tokens_right(self, input_ids: np.array, pad_token_id: int, eos_token_id: int):
-        """
-        Shift input ids one token to the right and move eos_token to the beginning.
-        """
-
-        # shift input ids one token to the right, the last token is rotated to the beginning
-        shifted_input_ids = np.roll(input_ids, 1, axis=-1)
-
-        # replace the first token with the eos token
-        shifted_input_ids[:, 0] = eos_token_id
-
-        # when padding exists, the last eos tokens will not be rotated to the first position,
-        # we'll need to replace it with a pad token
-
-        # replace eos tokens at the end of sequences with pad token
-        end_with_eos = np.where(shifted_input_ids[:, -1] == eos_token_id)
-        shifted_input_ids[end_with_eos, -1] = pad_token_id
-
-        # locate the positions where eos tokens is followed by the pad token
-        last_eos_indices = np.where(
-            (shifted_input_ids[:, :-1] == eos_token_id)
-            * (shifted_input_ids[:, 1:] == pad_token_id)
-        )
-
-        # replace eos tokens with pad token
-        shifted_input_ids[last_eos_indices] = pad_token_id
-        return shifted_input_ids
-
-
-def generate_batch_splits(samples_idx: np.ndarray, batch_size: int) -> np.ndarray:
-    num_samples = len(samples_idx)
-    samples_to_remove = num_samples % batch_size
-
-    if samples_to_remove != 0:
-        samples_idx = samples_idx[:-samples_to_remove]
-    sections_split = num_samples // batch_size
-    batch_idx = np.split(samples_idx, sections_split)
-    return batch_idx
-
 
 def write_train_metric(summary_writer, train_metrics, train_time, step):
     summary_writer.scalar("train_time", train_time, step)
@@ -522,15 +481,13 @@ def main():
     # For CSV/JSON files, this script will use the column called 'text' or the first column if no column called
     # 'text' is found. You can easily tweak this behavior (see below).
     if data_args.dataset_name is not None:
-        from datasets import load_from_disk
-        datasets = load_from_disk('/mnt/disks/nlpvnhub/transformers/examples/flax/language-modeling/binhvq_test')
         # Downloading and loading a dataset from the hub.
-        # datasets = load_dataset(
-        #     data_args.dataset_name,
-        #     data_args.dataset_config_name,
-        #     cache_dir=model_args.cache_dir,
-        #     use_auth_token=True if model_args.use_auth_token else None,
-        # )
+        datasets = load_dataset(
+            data_args.dataset_name,
+            data_args.dataset_config_name,
+            cache_dir=model_args.cache_dir,
+            use_auth_token=True if model_args.use_auth_token else None,
+        )
 
         if "validation" not in datasets.keys():
             datasets["validation"] = load_dataset(
@@ -633,10 +590,12 @@ def main():
     # Use Punkt Sentence Tokenizer to divide a document into a list of sentences
     nltk.download('punkt')
     sentence_tokenizer = nltk.data.load("tokenizers/punkt/english.pickle")
+
     def sentence_split_function(example):
-        sents = sentence_tokenizer.tokenize(example[text_column_name])
-        new_text = f"{tokenizer.eos_token}{tokenizer.bos_token}".join(sents)
-        return {text_column_name: new_text}
+        sents = sentence_tokenizer.tokenize(example['text'])
+        # use pad token as end of sentence indicator
+        new_text = f"{tokenizer.pad_token}".join(sents)
+        return {'text': new_text}
 
     splitted_datasets = datasets.map(
         sentence_split_function,
@@ -649,7 +608,7 @@ def main():
     # Tokenize every text, then concatenate them together before splitting them in smaller parts.
     # Since we make sure that all sequences are of the same length, no attention_mask is needed.
     def tokenize_function(examples):
-        return tokenizer(examples[text_column_name], add_special_tokens=True)
+        return tokenizer(examples[text_column_name], add_special_tokens=False, return_attention_mask=False)
 
     tokenized_datasets = splitted_datasets.map(
         tokenize_function,
@@ -734,7 +693,6 @@ def main():
         mask_ratio=data_args.mlm_probability,
         poisson_lambda=data_args.poisson_lambda,
         permute_sentence_ratio=data_args.permute_sentence_ratio,
-        pad_token_id=model.config.pad_token_id,
         decoder_start_token_id=model.config.decoder_start_token_id,
     )
 
