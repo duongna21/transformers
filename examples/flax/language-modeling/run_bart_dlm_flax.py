@@ -481,13 +481,15 @@ def main():
     # For CSV/JSON files, this script will use the column called 'text' or the first column if no column called
     # 'text' is found. You can easily tweak this behavior (see below).
     if data_args.dataset_name is not None:
+        from datasets import load_from_disk
+        datasets = load_from_disk('/mnt/disks/nlpvnhub/transformers/examples/flax/language-modeling/binhvq_test')
         # Downloading and loading a dataset from the hub.
-        datasets = load_dataset(
-            data_args.dataset_name,
-            data_args.dataset_config_name,
-            cache_dir=model_args.cache_dir,
-            use_auth_token=True if model_args.use_auth_token else None,
-        )
+        # datasets = load_dataset(
+        #     data_args.dataset_name,
+        #     data_args.dataset_config_name,
+        #     cache_dir=model_args.cache_dir,
+        #     use_auth_token=True if model_args.use_auth_token else None,
+        # )
 
         if "validation" not in datasets.keys():
             datasets["validation"] = load_dataset(
