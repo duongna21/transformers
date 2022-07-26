@@ -324,7 +324,7 @@ class FlaxDataCollatorForBartDenoisingLM:
                 substitutions = np.random.permutation(num_sentences[i])[:num_to_permute[i]]
             except:
                 print('\n\n\ni: ', i)
-                print('len(sentence): ', len(sentence))
+                print('len(sentence): ', len(num_sentences))
                 print('num_sentences[i]: ', num_sentences[i])
                 print('num_to_permute[i]: ', num_to_permute[i])
             ordering = np.arange(0, num_sentences[i])
