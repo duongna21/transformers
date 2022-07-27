@@ -600,14 +600,14 @@ def main():
                   * (model_inputs["labels"][:, 1:]==tokenizer.pad_token_id)
 
         print('\n\n\nbatch["labels"][:2]: ', tokenizer.batch_decode(model_inputs["labels"][:2]))
-        print('\nbatch["labels"][:2]: ', model_inputs["labels"][:2])
-        print('\nmodel_inputs["labels"][:, :-1]==tokenizer.pad_token_id: ', model_inputs["labels"][:, :-1]==tokenizer.pad_token_id)
-        print('eos_pos_mask: ', eos_pos_mask)
+        # print('\nbatch["labels"][:2]: ', model_inputs["labels"][:2])
+        # print('\nmodel_inputs["labels"][:, :-1]==tokenizer.pad_token_id: ', model_inputs["labels"][:, :-1]==tokenizer.pad_token_id)
+        # print('eos_pos_mask: ', eos_pos_mask)
         eos_pos = np.argwhere(eos_pos_mask==True)
         print('eos_pos: ', eos_pos)
-        # model_inputs["labels"][eos_pos] = tokenizer.eos_token_id
-        # print('\nprocessed batch["labels"][:2]: ', tokenizer.batch_decode(model_inputs["labels"][:2]))
-        # print('\nbatch["decoder_input_ids"][:2]: ', tokenizer.batch_decode(model_inputs["decoder_input_ids"][:2]))
+        model_inputs["labels"][eos_pos] = tokenizer.eos_token_id
+        print('\nprocessed batch["labels"][:2]: ', tokenizer.batch_decode(model_inputs["labels"][:2]))
+        print('\nbatch["decoder_input_ids"][:2]: ', tokenizer.batch_decode(model_inputs["decoder_input_ids"][:2]))
 
         # We need decoder_attention_mask so we can ignore pad tokens from loss
         model_inputs["decoder_attention_mask"] = labels["attention_mask"]
