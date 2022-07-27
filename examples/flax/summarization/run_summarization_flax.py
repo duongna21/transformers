@@ -596,11 +596,12 @@ def main():
             labels["input_ids"], config.pad_token_id, config.decoder_start_token_id
         )
         model_inputs["decoder_input_ids"] = np.asarray(decoder_input_ids)
-        eos_pos_mask = ~(model_inputs["labels"][:, :-1]==tokenizer.pad_token) \
-                  * (model_inputs["labels"][:, 1:]==tokenizer.pad_token)
+        eos_pos_mask = ~(model_inputs["labels"][:, :-1]==tokenizer.pad_token_id) \
+                  * (model_inputs["labels"][:, 1:]==tokenizer.pad_token_id)
 
         print('\n\n\nbatch["labels"][:2]: ', tokenizer.batch_decode(model_inputs["labels"][:2]))
         print('\nbatch["labels"][:2]: ', model_inputs["labels"][:2])
+        print('\nmodel_inputs["labels"][:, :-1]==tokenizer.pad_token_id: ', model_inputs["labels"][:, :-1]==tokenizer.pad_token_id)
         print('eos_pos_mask: ', eos_pos_mask)
         # eos_pos = np.argwhere(eos_pos_mask==True)
         # print('eos_pos: ', eos_pos)
