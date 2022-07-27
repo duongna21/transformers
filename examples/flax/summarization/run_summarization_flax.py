@@ -596,8 +596,8 @@ def main():
             labels["input_ids"], config.pad_token_id, config.decoder_start_token_id
         )
         model_inputs["decoder_input_ids"] = np.asarray(decoder_input_ids)
-        print('batch["labels"][:2]: ', model_inputs["labels"][:2])
-        print('batch["decoder_input_ids"][:2]: ', model_inputs["decoder_input_ids"][:2])
+        print('\n\nbatch["labels"][:2]: ', tokenizer.batch_decode(model_inputs["labels"][:2]))
+        print('batch["decoder_input_ids"][:2]: ', tokenizer.batch_decode(model_inputs["decoder_input_ids"][:2]))
 
         # We need decoder_attention_mask so we can ignore pad tokens from loss
         model_inputs["decoder_attention_mask"] = labels["attention_mask"]
