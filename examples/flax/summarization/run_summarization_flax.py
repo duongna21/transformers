@@ -610,8 +610,8 @@ def main():
         # print('eos_pos: ', eos_pos)
 
         # print('\nprocessed batch["labels"][:2]: ', tokenizer.batch_decode(model_inputs["labels"][:2]))
-        print('\n\nbatch["labels"][:2]: ', tokenizer.batch_decode(model_inputs["labels"][:2]))
-        print('\nbatch["decoder_input_ids"][:2]: ', tokenizer.batch_decode(model_inputs["decoder_input_ids"][:2]))
+        # print('\n\nbatch["labels"][:2]: ', tokenizer.batch_decode(model_inputs["labels"][:2]))
+        # print('\nbatch["decoder_input_ids"][:2]: ', tokenizer.batch_decode(model_inputs["decoder_input_ids"][:2]))
 
         # We need decoder_attention_mask so we can ignore pad tokens from loss
         model_inputs["decoder_attention_mask"] = labels["attention_mask"]
