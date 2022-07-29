@@ -714,15 +714,20 @@ def main():
             label_mask = jnp.where(labels > 0, 1.0, 0.0)
             loss = optax.softmax_cross_entropy(logits, onehot(labels, logits.shape[-1])) * label_mask
 
-            # take average
-            loss = loss.sum() / label_mask.sum()
+            device_loss, device_num_labels = loss.sum(), label_mask.sum()
+            return device_loss, device_num_labels
 
-            return loss
+        grad_fn = jax.value_and_grad(loss_fn, has_aux=True)
+        device_loss, device_num_labels, device_grad = grad_fn(state.params)
 
-        grad_fn = jax.value_and_grad(loss_fn)
-        loss, grad = grad_fn(state.params)
-        grad = jax.lax.pmean(grad, "batch")
+        total_num_labels = jax.lax.psum(device_num_labels, "batch")
+
+        total_grad = jax.lax.psum(device_grad, "batch")
+        grad = jax.tree_map(lambda x: x / total_num_labels, total_grad)
         new_state = state.apply_gradients(grads=grad)
+
+        total_loss = jax.lax.psum(device_loss, "batch")
+        loss = jax.tree_map(lambda x: x / total_num_labels, total_loss)
 
         metrics = jax.lax.pmean(
             {"loss": loss, "learning_rate": linear_decay_lr_schedule_fn(state.step)}, axis_name="batch"
