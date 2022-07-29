@@ -733,6 +733,10 @@ def main():
             {"loss": loss, "learning_rate": linear_decay_lr_schedule_fn(state.step)}, axis_name="batch"
         )
 
+        print('\n\nloss: ', loss)
+        print('\ngrad: ', grad)
+        print('\ntotal_num_labels: ', total_num_labels)
+
         return new_state, metrics, new_dropout_rng
 
     # Create parallel version of the train step
