@@ -724,14 +724,14 @@ def main():
         total_num_labels = jax.lax.psum(device_num_labels, "batch")
 
         total_grad = jax.lax.psum(device_grad, "batch")
-        grad = total_grad # tree_map(lambda x: x / total_num_labels, total_grad)
+        grad = total_grad * 100 # tree_map(lambda x: x / total_num_labels, total_grad)
         new_state = state.apply_gradients(grads=grad)
 
         total_loss = jax.lax.psum(device_loss, "batch")
         loss = tree_map(lambda x: x / total_num_labels, total_loss)
 
         metrics = jax.lax.pmean(
-            {"loss": total_loss, "learning_rate": linear_decay_lr_schedule_fn(state.step)}, axis_name="batch"
+            {"loss": loss, "learning_rate": linear_decay_lr_schedule_fn(state.step)}, axis_name="batch"
         )
 
         return new_state, metrics, new_dropout_rng
