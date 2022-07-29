@@ -716,7 +716,7 @@ def main():
             loss = optax.softmax_cross_entropy(logits, onehot(labels, logits.shape[-1])) * label_mask
 
             device_loss, device_num_labels = loss.sum(), label_mask.sum()
-            return device_loss*100, device_num_labels
+            return device_loss, device_num_labels
 
         grad_fn = jax.value_and_grad(loss_fn, has_aux=True)
         (device_loss, device_num_labels), device_grad = grad_fn(state.params)
@@ -724,7 +724,7 @@ def main():
         total_num_labels = jax.lax.psum(device_num_labels, "batch")
 
         total_grad = jax.lax.psum(device_grad, "batch")
-        grad = total_grad  # tree_map(lambda x: x / total_num_labels, total_grad)
+        grad = tree_map(lambda x: x / total_num_labels, total_grad)
         new_state = state.apply_gradients(grads=grad)
 
         total_loss = jax.lax.psum(device_loss, "batch")
