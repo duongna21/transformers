@@ -731,7 +731,7 @@ def main():
         loss = tree_map(lambda x: x / total_num_labels, total_loss)
 
         metrics = jax.lax.pmean(
-            {"loss": loss, "learning_rate": linear_decay_lr_schedule_fn(state.step)}, axis_name="batch"
+            {"loss": loss, "grad": grad, "learning_rate": linear_decay_lr_schedule_fn(state.step)}, axis_name="batch"
         )
 
         return new_state, metrics, new_dropout_rng
@@ -791,6 +791,11 @@ def main():
 
             cur_step = epoch * (num_train_samples // train_batch_size) + step
 
+            epochs.write(
+                f"Step... ({cur_step} | Grad: {train_metric['grad']}, Learning Rate:"
+                f" {train_metric['learning_rate']})"
+            )
+            break
             if cur_step % training_args.logging_steps == 0 and cur_step > 0:
                 # Save metrics
                 train_metric = jax_utils.unreplicate(train_metric)
