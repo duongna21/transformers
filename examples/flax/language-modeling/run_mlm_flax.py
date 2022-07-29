@@ -724,7 +724,7 @@ def main():
         total_num_labels = jax.lax.psum(device_num_labels, "batch")
 
         total_grad = jax.lax.psum(device_grad, "batch")
-        grad = tree_map(lambda x: x / total_num_labels, total_grad)
+        grad = total_grad # tree_map(lambda x: x / total_num_labels, total_grad)
         new_state = state.apply_gradients(grads=grad)
 
         total_loss = jax.lax.psum(device_loss, "batch")
