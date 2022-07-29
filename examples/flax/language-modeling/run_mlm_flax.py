@@ -718,7 +718,7 @@ def main():
             return device_loss, device_num_labels
 
         grad_fn = jax.value_and_grad(loss_fn, has_aux=True)
-        device_loss, device_num_labels, device_grad = grad_fn(state.params)
+        (device_loss, device_num_labels), device_grad = grad_fn(state.params)
 
         total_num_labels = jax.lax.psum(device_num_labels, "batch")
 
