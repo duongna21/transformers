@@ -731,7 +731,7 @@ def main():
         loss = tree_map(lambda x: x / total_num_labels, total_loss)
 
         metrics = jax.lax.pmean(
-            {"loss": loss, "learning_rate": linear_decay_lr_schedule_fn(state.step)}, axis_name="batch"
+            {"loss": total_loss, "learning_rate": linear_decay_lr_schedule_fn(state.step)}, axis_name="batch"
         )
 
         return new_state, metrics, new_dropout_rng
