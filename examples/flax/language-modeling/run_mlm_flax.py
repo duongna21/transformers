@@ -42,6 +42,7 @@ import flax
 import jax
 import jax.numpy as jnp
 import optax
+from jax.tree_util import tree_map
 from flax import jax_utils, traverse_util
 from flax.jax_utils import pad_shard_unpad
 from flax.training import train_state
@@ -723,19 +724,15 @@ def main():
         total_num_labels = jax.lax.psum(device_num_labels, "batch")
 
         total_grad = jax.lax.psum(device_grad, "batch")
-        grad = jax.tree_map(lambda x: x / total_num_labels, total_grad)
+        grad = tree_map(lambda x: x / total_num_labels, total_grad)
         new_state = state.apply_gradients(grads=grad)
 
         total_loss = jax.lax.psum(device_loss, "batch")
-        loss = jax.tree_map(lambda x: x / total_num_labels, total_loss)
+        loss = tree_map(lambda x: x / total_num_labels, total_loss)
 
         metrics = jax.lax.pmean(
             {"loss": loss, "learning_rate": linear_decay_lr_schedule_fn(state.step)}, axis_name="batch"
         )
-
-        # print('\n\nloss: ', loss)
-        # print('\ngrad: ', grad)
-        # print('\ntotal_num_labels: ', total_num_labels)
 
         return new_state, metrics, new_dropout_rng
 
@@ -828,9 +825,9 @@ def main():
 
                 # normalize eval metrics
                 eval_metrics = get_metrics(eval_metrics)
-                eval_metrics = jax.tree_map(jnp.sum, eval_metrics)
+                eval_metrics = tree_map(jnp.sum, eval_metrics)
                 eval_normalizer = eval_metrics.pop("normalizer")
-                eval_metrics = jax.tree_map(lambda x: x / eval_normalizer, eval_metrics)
+                eval_metrics = tree_map(lambda x: x / eval_normalizer, eval_metrics)
 
                 # Update progress bar
                 epochs.desc = f"Step... ({cur_step} | Loss: {eval_metrics['loss']}, Acc: {eval_metrics['accuracy']})"
@@ -842,7 +839,7 @@ def main():
             if cur_step % training_args.save_steps == 0 and cur_step > 0:
                 # save checkpoint after each epoch and push checkpoint to the hub
                 if jax.process_index() == 0:
-                    params = jax.device_get(jax.tree_map(lambda x: x[0], state.params))
+                    params = jax.device_get(tree_map(lambda x: x[0], state.params))
                     model.save_pretrained(training_args.output_dir, params=params)
                     tokenizer.save_pretrained(training_args.output_dir)
                     if training_args.push_to_hub:
@@ -868,9 +865,9 @@ def main():
 
         # normalize eval metrics
         eval_metrics = get_metrics(eval_metrics)
-        eval_metrics = jax.tree_map(lambda metric: jnp.sum(metric).item(), eval_metrics)
+        eval_metrics = tree_map(lambda metric: jnp.sum(metric).item(), eval_metrics)
         eval_normalizer = eval_metrics.pop("normalizer")
-        eval_metrics = jax.tree_map(lambda x: x / eval_normalizer, eval_metrics)
+        eval_metrics = tree_map(lambda x: x / eval_normalizer, eval_metrics)
 
         try:
             perplexity = math.exp(eval_metrics["loss"])
