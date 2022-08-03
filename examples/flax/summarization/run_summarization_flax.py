@@ -592,7 +592,7 @@ def main():
 
         # Setup the tokenizer for targets
         labels = tokenizer(
-            text_target=targets,
+            text=targets,
             max_length=max_target_length,
             padding="max_length",
             truncation=True,
