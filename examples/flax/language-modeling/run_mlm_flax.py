@@ -724,7 +724,7 @@ def main():
         grad = jax.lax.pmean(grad, "batch")
         new_state = state.apply_gradients(grads=grad)
 
-        metrics = jax.lax.pmean(
+        metrics = (
             {"loss": loss, "learning_rate": linear_decay_lr_schedule_fn(state.step)}, axis_name="batch"
         )
 
