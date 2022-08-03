@@ -728,7 +728,7 @@ def main():
             {"loss": loss, "learning_rate": linear_decay_lr_schedule_fn(state.step), "grad": grad}
         )
 
-        return new_state, metrics, new_dropout_rng
+        return state, metrics, new_dropout_rng
 
     # Create parallel version of the train step
     p_train_step = jax.pmap(train_step, "batch", donate_argnums=(0,))
