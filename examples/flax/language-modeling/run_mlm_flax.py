@@ -561,6 +561,7 @@ def main():
         # efficient when it receives the `special_tokens_mask`.
         print("\n\ndatasets['train'][0]: ", (datasets['train'][1]), datasets)
         def tokenize_function(examples):
+            print(tokenizer(examples[text_column_name], return_special_tokens_mask=True))
             return tokenizer(examples[text_column_name], return_special_tokens_mask=True)
 
         tokenized_datasets = datasets.map(
