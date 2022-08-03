@@ -559,6 +559,7 @@ def main():
         # Otherwise, we tokenize every text, then concatenate them together before splitting them in smaller parts.
         # We use `return_special_tokens_mask=True` because DataCollatorForLanguageModeling (see below) is more
         # efficient when it receives the `special_tokens_mask`.
+        print("\n\ndatasets['train'][0]: ", (datasets['train'][1]))
         def tokenize_function(examples):
             return tokenizer(examples[text_column_name], return_special_tokens_mask=True)
 
@@ -569,6 +570,8 @@ def main():
             remove_columns=column_names,
             load_from_cache_file=not data_args.overwrite_cache,
         )
+
+        print("\n\ntokenized_datasets['train'][0]: ", (tokenized_datasets['train'][1]))
 
         # Main data processing function that will concatenate all texts from our dataset and generate chunks of
         # max_seq_length.
@@ -593,7 +596,7 @@ def main():
         #
         # To speed up this part, we use multiprocessing. See the documentation of the map method for more information:
         # https://huggingface.co/docs/datasets/package_reference/main_classes.html#datasets.Dataset.map
-        print("\n\ntokenized_datasets['train'][0]: ", (tokenized_datasets['train'][1]))
+
         tokenized_datasets = tokenized_datasets.map(
             group_texts,
             batched=True,
