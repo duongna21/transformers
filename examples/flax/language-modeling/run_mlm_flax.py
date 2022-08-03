@@ -725,7 +725,7 @@ def main():
         new_state = state.apply_gradients(grads=grad)
 
         metrics = jax.lax.pmean(
-            {"grad": grad, "loss": loss, "learning_rate": linear_decay_lr_schedule_fn(state.step)}, axis_name="batch"
+            {"loss": loss, "learning_rate": linear_decay_lr_schedule_fn(state.step)}, axis_name="batch"
         )
 
         return new_state, metrics, new_dropout_rng
@@ -794,7 +794,7 @@ def main():
 
                 epochs.write(
                     f"Step... ({cur_step} | Loss: {train_metric['loss']}, Learning Rate:"
-                    f" {train_metric['learning_rate']}, Grad: {train_metric['grad'][0]})"
+                    f" {train_metric['learning_rate']})"
                 )
 
                 train_metrics = []
