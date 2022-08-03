@@ -721,15 +721,17 @@ def main():
 
         grad_fn = jax.value_and_grad(loss_fn, has_aux=True)
         (loss, num_labels), grad = grad_fn(state.params)
+        # compute true grad and loss
+        num_labels = jax.lax.psum(num_labels, "batch")
+        loss = jax.lax.psum(loss, "batch")
+        loss = jax.tree_map(lambda x: x/num_labels , loss)
         grad = jax.lax.psum(grad, "batch")
-        grad = jax.tree_map(lambda x: x/jax.lax.psum(num_labels, "batch"), grad)
-        # new_state = state.apply_gradients(grads=grad)
+        grad = jax.tree_map(lambda x: x/num_labels, grad)
+        new_state = state.apply_gradients(grads=grad)
 
-        metrics = (
-            {"loss": loss, "learning_rate": linear_decay_lr_schedule_fn(state.step), "grad": grad, "num_labels": num_labels}
-        )
+        metrics = {"loss": loss, "learning_rate": linear_decay_lr_schedule_fn(state.step), "grad": grad}
 
-        return state, metrics, new_dropout_rng
+        return new_state, metrics, new_dropout_rng
 
     # Create parallel version of the train step
     p_train_step = jax.pmap(train_step, "batch", donate_argnums=(0,))
@@ -788,7 +790,7 @@ def main():
 
             if cur_step % training_args.logging_steps == 0 and cur_step > 0:
                 # Save metrics
-                print('train metric replicated: ', train_metric)
+                print('train_metric: ', train_metric)
                 train_metric = jax_utils.unreplicate(train_metric)
                 train_time += time.time() - train_start
                 if has_tensorboard and jax.process_index() == 0:
