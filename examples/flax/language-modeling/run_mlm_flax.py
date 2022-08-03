@@ -291,7 +291,7 @@ class FlaxDataCollatorForLanguageModeling:
 
         # If special token mask has been preprocessed, pop it from the dict.
         special_tokens_mask = batch.pop("special_tokens_mask", None)
-
+        print('special_tokens_mask: ', special_tokens_mask)
         batch["input_ids"], batch["labels"] = self.mask_tokens(
             batch["input_ids"], special_tokens_mask=special_tokens_mask
         )
