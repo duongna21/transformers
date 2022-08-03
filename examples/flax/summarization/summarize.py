@@ -591,7 +591,7 @@ def main():
 
         # Setup the tokenizer for targets
         labels = tokenizer(
-            text_target=targets,
+            text=targets,
             max_length=max_target_length,
             padding="max_length",
             truncation=True,
@@ -775,9 +775,8 @@ def main():
 
         # ignore padded tokens from loss
         loss = loss * padding_mask
-        loss = loss.sum()
-        num_labels = padding_mask.sum()
-        return loss, num_labels
+        loss = loss.sum() / padding_mask.sum()
+        return loss
 
     # Define gradient update step fn
     def train_step(state, batch, label_smoothing_factor=0.0):
@@ -786,21 +785,17 @@ def main():
         def compute_loss(params):
             labels = batch.pop("labels")
             logits = state.apply_fn(**batch, params=params, dropout_rng=dropout_rng, train=True)[0]
-            loss, num_labels = loss_fn(logits, labels, batch["decoder_attention_mask"], label_smoothing_factor)
-            return loss, num_labels
+            loss = loss_fn(logits, labels, batch["decoder_attention_mask"], label_smoothing_factor)
+            return loss
 
-        grad_fn = jax.value_and_grad(compute_loss, has_aux=True)
-        (loss, num_labels), grad = grad_fn(state.params)
-        num_labels = jax.lax.psum(num_labels, "batch")
-        # true loss = total loss / total samples
-        loss = jax.lax.psum(loss, "batch")
-        loss = jax.tree_map(lambda x: x / num_labels, loss)
-        # true grad = total grad / total samples
-        grad = jax.lax.psum(grad, "batch")
-        grad = jax.tree_map(lambda x: x / num_labels, grad)
+        grad_fn = jax.value_and_grad(compute_loss)
+        loss, grad = grad_fn(state.params)
+        grad = jax.lax.pmean(grad, "batch")
+
         new_state = state.apply_gradients(grads=grad, dropout_rng=new_dropout_rng)
 
         metrics = {"loss": loss, "learning_rate": linear_decay_lr_schedule_fn(state.step)}
+        metrics = jax.lax.pmean(metrics, axis_name="batch")
 
         return new_state, metrics
 
@@ -808,12 +803,11 @@ def main():
     def eval_step(params, batch, label_smoothing_factor=0.0):
         labels = batch.pop("labels")
         logits = model(**batch, params=params, train=False)[0]
-        loss, num_labels = loss_fn(logits, labels, batch["decoder_attention_mask"], label_smoothing_factor)
-        # true loss = total loss / total samples
-        loss = jax.lax.psum(loss, "batch")
-        loss = jax.tree_map(lambda x: x / num_labels, loss)
+        loss = loss_fn(logits, labels, batch["decoder_attention_mask"], label_smoothing_factor)
+
         # summarize metrics
         metrics = {"loss": loss}
+        metrics = jax.lax.pmean(metrics, axis_name="batch")
         return metrics
 
     # Define generation function
