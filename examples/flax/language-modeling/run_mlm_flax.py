@@ -600,6 +600,8 @@ def main():
             load_from_cache_file=not data_args.overwrite_cache,
         )
 
+        print("\n\ntokenized_datasets['train'][0]: ", tokenized_datasets['train'][0])
+
     # Enable tensorboard only on the master node
     has_tensorboard = is_tensorboard_available()
     if has_tensorboard and jax.process_index() == 0:
