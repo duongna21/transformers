@@ -714,17 +714,18 @@ def main():
             loss = optax.softmax_cross_entropy(logits, onehot(labels, logits.shape[-1])) * label_mask
 
             # take average
-            loss = loss.sum() / label_mask.sum()
+            loss = loss.sum()
+            num_labels = label_mask.sum()
 
-            return loss
+            return loss, num_labels
 
-        grad_fn = jax.value_and_grad(loss_fn)
-        loss, grad = grad_fn(state.params)
+        grad_fn = jax.value_and_grad(loss_fn, has_aux=True)
+        (loss, num_labels), grad = grad_fn(state.params)
         grad = jax.lax.pmean(grad, "batch")
         new_state = state.apply_gradients(grads=grad)
 
         metrics = jax.lax.pmean(
-            {"loss": loss, "learning_rate": linear_decay_lr_schedule_fn(state.step)}, axis_name="batch"
+            {"grad": grad, "loss": loss, "learning_rate": linear_decay_lr_schedule_fn(state.step)}, axis_name="batch"
         )
 
         return new_state, metrics, new_dropout_rng
@@ -793,7 +794,7 @@ def main():
 
                 epochs.write(
                     f"Step... ({cur_step} | Loss: {train_metric['loss']}, Learning Rate:"
-                    f" {train_metric['learning_rate']})"
+                    f" {train_metric['learning_rate']}, Grad: {train_metric['grad'][0]})"
                 )
 
                 train_metrics = []
