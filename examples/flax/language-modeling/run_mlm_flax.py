@@ -725,7 +725,7 @@ def main():
         new_state = state.apply_gradients(grads=grad)
 
         metrics = (
-            {"loss": loss, "learning_rate": linear_decay_lr_schedule_fn(state.step), "grad": grad[0][0]}
+            {"loss": loss, "learning_rate": linear_decay_lr_schedule_fn(state.step), "grad": grad}
         )
 
         return new_state, metrics, new_dropout_rng
