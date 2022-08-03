@@ -593,6 +593,7 @@ def main():
         #
         # To speed up this part, we use multiprocessing. See the documentation of the map method for more information:
         # https://huggingface.co/docs/datasets/package_reference/main_classes.html#datasets.Dataset.map
+        print("\n\ntokenized_datasets['train'][0]: ", len(tokenized_datasets['train'][1]['input_ids']))
         tokenized_datasets = tokenized_datasets.map(
             group_texts,
             batched=True,
