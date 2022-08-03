@@ -600,7 +600,7 @@ def main():
             load_from_cache_file=not data_args.overwrite_cache,
         )
 
-        print("\n\ntokenized_datasets['train'][0]: ", tokenized_datasets['train'][0])
+        print("\n\ntokenized_datasets['train'][0]: ", len(tokenized_datasets['train'][0]['input_ids']))
 
     # Enable tensorboard only on the master node
     has_tensorboard = is_tensorboard_available()
