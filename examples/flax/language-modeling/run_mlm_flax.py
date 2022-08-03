@@ -717,11 +717,11 @@ def main():
             loss = loss.sum()
             num_labels = label_mask.sum()
 
-            return loss/num_labels
+            return loss, num_labels
 
-        grad_fn = jax.value_and_grad(loss_fn, has_aux=False)
-        (loss), grad = grad_fn(state.params)
-        grad = jax.lax.pmean(grad, "batch")
+        grad_fn = jax.value_and_grad(loss_fn, has_aux=True)
+        (loss, num_labels), grad = grad_fn(state.params)
+        grad = jax.lax.psum(grad, "batch")
         new_state = state.apply_gradients(grads=grad)
 
         metrics = (
