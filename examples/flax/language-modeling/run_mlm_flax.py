@@ -722,7 +722,7 @@ def main():
         grad_fn = jax.value_and_grad(loss_fn, has_aux=True)
         (loss, num_labels), grad = grad_fn(state.params)
         grad = jax.lax.psum(grad, "batch")
-        new_state = state.apply_gradients(grads=grad)
+        # new_state = state.apply_gradients(grads=grad)
 
         metrics = (
             {"loss": loss, "learning_rate": linear_decay_lr_schedule_fn(state.step), "grad": grad}
