@@ -579,8 +579,7 @@ def main():
     # for that dynamically import the `shift_tokens_right` function from the model file
     model_module = __import__(model.__module__, fromlist=["shift_tokens_tight"])
     shift_tokens_right_fn = getattr(model_module, "shift_tokens_right")
-    print('\n\ntext column: ', text_column)
-    print('summary_column: ', summary_column)
+
     # Setting padding="max_length" as we need fixed length inputs for jitted functions
     def preprocess_function(examples):
         inputs = examples[text_column]
@@ -592,7 +591,7 @@ def main():
 
         # Setup the tokenizer for targets
         labels = tokenizer(
-            text=targets,
+            text_target=targets,
             max_length=max_target_length,
             padding="max_length",
             truncation=True,
@@ -617,7 +616,6 @@ def main():
         if data_args.max_train_samples is not None:
             max_train_samples = min(len(train_dataset), data_args.max_train_samples)
             train_dataset = train_dataset.select(range(max_train_samples))
-        print('\n\ntrain_dataset: ', train_dataset)
         train_dataset = train_dataset.map(
             preprocess_function,
             batched=True,
@@ -777,9 +775,8 @@ def main():
 
         # ignore padded tokens from loss
         loss = loss * padding_mask
-        loss = loss.sum()
-        num_labels = padding_mask.sum()
-        return loss, num_labels
+        loss = loss.sum() / padding_mask.sum()
+        return loss
 
     # Define gradient update step fn
     def train_step(state, batch, label_smoothing_factor=0.0):
@@ -788,11 +785,11 @@ def main():
         def compute_loss(params):
             labels = batch.pop("labels")
             logits = state.apply_fn(**batch, params=params, dropout_rng=dropout_rng, train=True)[0]
-            loss, num_labels = loss_fn(logits, labels, batch["decoder_attention_mask"], label_smoothing_factor)
-            return loss, num_labels
+            loss = loss_fn(logits, labels, batch["decoder_attention_mask"], label_smoothing_factor)
+            return loss
 
-        grad_fn = jax.value_and_grad(compute_loss, has_aux=True)
-        (loss, num_labels), grad = grad_fn(state.params)
+        grad_fn = jax.value_and_grad(compute_loss)
+        loss, grad = grad_fn(state.params)
         grad = jax.lax.pmean(grad, "batch")
 
         new_state = state.apply_gradients(grads=grad, dropout_rng=new_dropout_rng)
@@ -863,7 +860,7 @@ def main():
             train_metrics.append(train_metric)
 
         train_time += time.time() - train_start
-        print('train_metric: ', train_metric)
+
         train_metric = unreplicate(train_metric)
 
         epochs.write(
