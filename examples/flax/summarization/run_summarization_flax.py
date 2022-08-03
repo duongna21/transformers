@@ -579,7 +579,8 @@ def main():
     # for that dynamically import the `shift_tokens_right` function from the model file
     model_module = __import__(model.__module__, fromlist=["shift_tokens_tight"])
     shift_tokens_right_fn = getattr(model_module, "shift_tokens_right")
-
+    print('\n\ntext column: ', text_column)
+    print('summary_column: ', summary_column)
     # Setting padding="max_length" as we need fixed length inputs for jitted functions
     def preprocess_function(examples):
         inputs = examples[text_column]
