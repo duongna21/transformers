@@ -860,7 +860,7 @@ def main():
             train_metrics.append(train_metric)
 
         train_time += time.time() - train_start
-
+        print('train_metric: ', train_metric)
         train_metric = unreplicate(train_metric)
 
         epochs.write(
