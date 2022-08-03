@@ -721,7 +721,8 @@ def main():
 
         grad_fn = jax.value_and_grad(loss_fn, has_aux=True)
         (loss, num_labels), grad = grad_fn(state.params)
-        grad = jax.lax.psum(grad, "batch")
+        grad = jax.lax.pmean(grad, "batch")
+        # grad = jax.tree_map(lambda x: x/jax.lax.psum(num_labels), grad)
         # new_state = state.apply_gradients(grads=grad)
 
         metrics = (
