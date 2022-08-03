@@ -616,6 +616,7 @@ def main():
         if data_args.max_train_samples is not None:
             max_train_samples = min(len(train_dataset), data_args.max_train_samples)
             train_dataset = train_dataset.select(range(max_train_samples))
+        print('\n\ntrain_dataset: ', train_dataset)
         train_dataset = train_dataset.map(
             preprocess_function,
             batched=True,
@@ -775,8 +776,9 @@ def main():
 
         # ignore padded tokens from loss
         loss = loss * padding_mask
-        loss = loss.sum() / padding_mask.sum()
-        return loss
+        loss = loss.sum()
+        num_labels = padding_mask.sum()
+        return loss, num_labels
 
     # Define gradient update step fn
     def train_step(state, batch, label_smoothing_factor=0.0):
@@ -785,11 +787,11 @@ def main():
         def compute_loss(params):
             labels = batch.pop("labels")
             logits = state.apply_fn(**batch, params=params, dropout_rng=dropout_rng, train=True)[0]
-            loss = loss_fn(logits, labels, batch["decoder_attention_mask"], label_smoothing_factor)
-            return loss
+            loss, num_labels = loss_fn(logits, labels, batch["decoder_attention_mask"], label_smoothing_factor)
+            return loss, num_labels
 
-        grad_fn = jax.value_and_grad(compute_loss)
-        loss, grad = grad_fn(state.params)
+        grad_fn = jax.value_and_grad(compute_loss, has_aux=True)
+        (loss, num_labels), grad = grad_fn(state.params)
         grad = jax.lax.pmean(grad, "batch")
 
         new_state = state.apply_gradients(grads=grad, dropout_rng=new_dropout_rng)
