@@ -714,18 +714,22 @@ def main():
             loss = optax.softmax_cross_entropy(logits, onehot(labels, logits.shape[-1])) * label_mask
 
             # take average
-            loss = loss.sum() / label_mask.sum()
+            loss = loss.sum()
+            num_labels = label_mask.sum()
 
-            return loss
+            return loss, num_labels
 
-        grad_fn = jax.value_and_grad(loss_fn)
-        loss, grad = grad_fn(state.params)
-        grad = jax.lax.pmean(grad, "batch")
+        grad_fn = jax.value_and_grad(loss_fn, has_aux=True)
+        (loss, num_labels), grad = grad_fn(state.params)
+        # compute true grad and loss
+        num_labels = jax.lax.psum(num_labels, "batch")
+        loss = jax.lax.psum(loss, "batch")
+        loss = jax.tree_map(lambda x: x/num_labels , loss)
+        grad = jax.lax.psum(grad, "batch")
+        grad = jax.tree_map(lambda x: x/num_labels, grad)
         new_state = state.apply_gradients(grads=grad)
 
-        metrics = jax.lax.pmean(
-            {"loss": loss, "learning_rate": linear_decay_lr_schedule_fn(state.step), "grad": grad}, axis_name="batch"
-        )
+        metrics = {"loss": loss, "learning_rate": linear_decay_lr_schedule_fn(state.step)}
 
         return new_state, metrics, new_dropout_rng
 
@@ -786,7 +790,6 @@ def main():
 
             if cur_step % training_args.logging_steps == 0 and cur_step > 0:
                 # Save metrics
-                print('train_metric: ', train_metric)
                 train_metric = jax_utils.unreplicate(train_metric)
                 train_time += time.time() - train_start
                 if has_tensorboard and jax.process_index() == 0:
