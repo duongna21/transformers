@@ -903,6 +903,7 @@ def main():
 
                 # normalize eval metrics
                 eval_metrics = get_metrics(eval_metrics)
+                print('eval_metrics: ', eval_metrics)
                 eval_metrics = jax.tree_map(jnp.sum, eval_metrics)
                 eval_normalizer = eval_metrics.pop("normalizer")
                 eval_metrics = jax.tree_map(lambda x: x / eval_normalizer, eval_metrics)
