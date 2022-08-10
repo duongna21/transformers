@@ -831,7 +831,7 @@ def main():
         accuracy = jnp.equal(jnp.argmax(logits, axis=-1), labels) * label_mask
 
         # summarize metrics
-        metrics = {"loss": loss.sum(), "accuracy": accuracy.sum(), "normalizer": label_mask.sum()}
+        metrics = {"loss_original": loss, "loss": loss.sum(), "accuracy": accuracy.sum(), "normalizer": label_mask.sum()}
         metrics = jax.lax.psum(metrics, axis_name="batch")
 
         return metrics
@@ -905,11 +905,10 @@ def main():
                 eval_metrics = get_metrics(eval_metrics)
                 eval_metrics = jax.tree_map(jnp.sum, eval_metrics)
                 eval_normalizer = eval_metrics.pop("normalizer")
-                print('\n\neval_normalizer: ', eval_normalizer)
                 eval_metrics = jax.tree_map(lambda x: x / eval_normalizer, eval_metrics)
 
                 # Update progress bar
-                epochs.desc = f"Step... ({cur_step} | Loss: {eval_metrics['loss']}, Acc: {eval_metrics['accuracy']})"
+                epochs.desc = f"Step... ({cur_step} | OrigLoss: {eval_metrics['loss_original']}, Loss: {eval_metrics['loss']}, Acc: {eval_metrics['accuracy']})"
 
                 # Save metrics
                 if has_tensorboard and jax.process_index() == 0:
