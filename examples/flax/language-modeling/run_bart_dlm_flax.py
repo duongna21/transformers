@@ -901,6 +901,7 @@ def main():
                     )
                     eval_metrics.append(metrics)
                     print('OrigLoss: ', metrics['loss_original'].shape, metrics['loss_original'])
+                    break
 
                 # normalize eval metrics
                 eval_metrics = get_metrics(eval_metrics)
