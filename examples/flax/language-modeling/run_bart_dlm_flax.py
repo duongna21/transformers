@@ -900,10 +900,10 @@ def main():
                         state.params, model_inputs.data, min_device_batch=per_device_eval_batch_size
                     )
                     eval_metrics.append(metrics)
+                    print('OrigLoss: ', metrics['loss_original'].shape, metrics['loss_original'])
 
                 # normalize eval metrics
                 eval_metrics = get_metrics(eval_metrics)
-                print('eval_metrics: ', eval_metrics)
                 eval_metrics = jax.tree_map(jnp.sum, eval_metrics)
                 eval_normalizer = eval_metrics.pop("normalizer")
                 eval_metrics = jax.tree_map(lambda x: x / eval_normalizer, eval_metrics)
