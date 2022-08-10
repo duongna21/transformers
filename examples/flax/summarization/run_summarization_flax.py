@@ -591,7 +591,7 @@ def main():
 
         captions = []
         for caption in examples['summary']:
-            captions.append(caption + " " + tokenizer.eos_token)
+            captions.append(tokenizer.bos_token + caption + " " + tokenizer.eos_token)
         targets = captions
         # Setup the tokenizer for targets
         labels = tokenizer(
