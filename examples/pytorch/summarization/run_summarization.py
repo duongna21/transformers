@@ -415,7 +415,7 @@ def main():
     )
     model = AutoModelForSeq2SeqLM.from_pretrained(
         model_args.model_name_or_path,
-        from_tf=bool(".ckpt" in model_args.model_name_or_path),
+        from_flax=True,
         config=config,
         cache_dir=model_args.cache_dir,
         revision=model_args.model_revision,
