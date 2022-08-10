@@ -887,9 +887,10 @@ def main():
             batch = next(eval_loader)
             labels = batch["labels"]
 
-            metrics = pad_shard_unpad(p_eval_step, static_return=True)(
-                state.params, batch, min_device_batch=per_device_eval_batch_size
-            )
+            # metrics = pad_shard_unpad(p_eval_step, static_return=True)(
+            #     state.params, batch, min_device_batch=per_device_eval_batch_size
+            # )
+            metrics = p_eval_step(state.params, batch)
             eval_metrics.append(metrics)
 
             # generation
@@ -942,9 +943,10 @@ def main():
             batch = next(pred_loader)
             labels = batch["labels"]
 
-            metrics = pad_shard_unpad(p_eval_step, static_return=True)(
-                state.params, batch, min_device_batch=per_device_eval_batch_size
-            )
+            # metrics = pad_shard_unpad(p_eval_step, static_return=True)(
+            #     state.params, batch, min_device_batch=per_device_eval_batch_size
+            # )
+            metrics = p_eval_step(state.params, batch)
             pred_metrics.append(metrics)
 
             # generation
