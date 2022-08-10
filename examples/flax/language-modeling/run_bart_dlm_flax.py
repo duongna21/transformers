@@ -900,7 +900,7 @@ def main():
                         state.params, model_inputs.data, min_device_batch=per_device_eval_batch_size
                     )
                     eval_metrics.append(metrics)
-                    print('\nOrigLoss: ', metrics['loss_original'], metrics['loss_original'].shape)
+                    print('\nOrigLoss: ', metrics['loss_original'], metrics['loss_original'].shape, max_seq_length)
 
                 # normalize eval metrics
                 eval_metrics = get_metrics(eval_metrics)
