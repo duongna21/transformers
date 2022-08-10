@@ -523,6 +523,7 @@ def main():
     if model_args.model_name_or_path:
         model = FlaxAutoModelForSeq2SeqLM.from_pretrained(
             model_args.model_name_or_path,
+            from_pt=True,
             config=config,
             seed=training_args.seed,
             dtype=getattr(jnp, model_args.dtype),
