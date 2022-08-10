@@ -589,6 +589,10 @@ def main():
             inputs, max_length=data_args.max_source_length, padding="max_length", truncation=True, return_tensors="np"
         )
 
+        captions = []
+        for caption in examples['summary']:
+            captions.append(caption + " " + tokenizer.eos_token)
+        targets = captions
         # Setup the tokenizer for targets
         labels = tokenizer(
             text_target=targets,
@@ -599,9 +603,11 @@ def main():
         )
 
         model_inputs["labels"] = labels["input_ids"]
+        print('example labels ids: ', model_inputs['labels'][0])
         decoder_input_ids = shift_tokens_right_fn(
             labels["input_ids"], config.pad_token_id, config.decoder_start_token_id
         )
+        print('example decoder_input_ids: ', decoder_input_ids[0])
         model_inputs["decoder_input_ids"] = np.asarray(decoder_input_ids)
 
         # We need decoder_attention_mask so we can ignore pad tokens from loss
