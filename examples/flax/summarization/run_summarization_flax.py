@@ -880,17 +880,16 @@ def main():
         eval_preds = []
         eval_labels = []
 
-        eval_loader = data_loader(input_rng, eval_dataset, eval_batch_size, drop_last=True)
+        eval_loader = data_loader(input_rng, eval_dataset, eval_batch_size, drop_last=False)
         eval_steps = math.ceil(len(eval_dataset) / eval_batch_size)
         for _ in tqdm(range(eval_steps), desc="Evaluating...", position=2, leave=False):
             # Model forward
             batch = next(eval_loader)
             labels = batch["labels"]
 
-            # metrics = pad_shard_unpad(p_eval_step, static_return=True)(
-            #     state.params, batch, min_device_batch=per_device_eval_batch_size
-            # )
-            metrics = p_eval_step(state.params, batch)
+            metrics = pad_shard_unpad(p_eval_step, static_return=True)(
+                state.params, batch, min_device_batch=per_device_eval_batch_size
+            )
             eval_metrics.append(metrics)
 
             # generation
@@ -936,17 +935,16 @@ def main():
         pred_generations = []
         pred_labels = []
 
-        pred_loader = data_loader(input_rng, predict_dataset, eval_batch_size, drop_last=True)
+        pred_loader = data_loader(input_rng, predict_dataset, eval_batch_size, drop_last=False)
         pred_steps = math.ceil(len(predict_dataset) / eval_batch_size)
         for _ in tqdm(range(pred_steps), desc="Predicting...", position=2, leave=False):
             # Model forward
             batch = next(pred_loader)
             labels = batch["labels"]
 
-            # metrics = pad_shard_unpad(p_eval_step, static_return=True)(
-            #     state.params, batch, min_device_batch=per_device_eval_batch_size
-            # )
-            metrics = p_eval_step(state.params, batch)
+            metrics = pad_shard_unpad(p_eval_step, static_return=True)(
+                state.params, batch, min_device_batch=per_device_eval_batch_size
+            )
             pred_metrics.append(metrics)
 
             # generation
