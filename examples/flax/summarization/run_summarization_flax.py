@@ -678,6 +678,7 @@ def main():
 
         # Some simple post-processing
         decoded_preds, decoded_labels = postprocess_text(decoded_preds, decoded_labels)
+        print('\n********************\n'.join[(pred, label) for pred, label in zip(decoded_preds, decoded_labels)])
 
         result = metric.compute(predictions=decoded_preds, references=decoded_labels, use_stemmer=True)
         result = {k: round(v * 100, 4) for k, v in result.items()}
