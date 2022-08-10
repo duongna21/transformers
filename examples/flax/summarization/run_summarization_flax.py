@@ -596,6 +596,7 @@ def main():
             padding="max_length",
             truncation=True,
             return_tensors="np",
+            add_special_tokens=True
         )
 
         model_inputs["labels"] = labels["input_ids"]
