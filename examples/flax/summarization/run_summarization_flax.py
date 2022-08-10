@@ -596,7 +596,6 @@ def main():
             padding="max_length",
             truncation=True,
             return_tensors="np",
-            add_special_tokens=True
         )
 
         model_inputs["labels"] = labels["input_ids"]
@@ -679,7 +678,7 @@ def main():
 
         # Some simple post-processing
         decoded_preds, decoded_labels = postprocess_text(decoded_preds, decoded_labels)
-        print('\n********************\n'.join(['pred: '+pred+'\nlabel: '+label for pred, label in zip(decoded_preds, decoded_labels)][:5]))
+        print('\n\n********************\n'.join(['pred: '+pred+'\nlabel: '+label for pred, label in zip(decoded_preds, decoded_labels)][:5]))
 
         result = metric.compute(predictions=decoded_preds, references=decoded_labels, use_stemmer=True)
         result = {k: round(v * 100, 4) for k, v in result.items()}
@@ -809,7 +808,7 @@ def main():
 
         # summarize metrics
         metrics = {"loss": loss}
-        metrics = jax.lax.pmean(metrics, axis_name="batch")
+        # metrics = jax.lax.pmean(metrics, axis_name="batch")
         return metrics
 
     # Define generation function
