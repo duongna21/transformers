@@ -355,11 +355,11 @@ def data_loader(rng: jax.random.PRNGKey, dataset: Dataset, batch_size: int, shuf
     else:
         steps_per_epoch = math.ceil(len(dataset) / batch_size)
         batch_idx = np.array_split(batch_idx, steps_per_epoch)
+        print('batch_idx: ', batch_idx.shape)
 
     for idx in batch_idx:
         batch = dataset[idx]
         batch = {k: np.array(v) for k, v in batch.items()}
-        print('idx: ', idx.shape)
         yield batch
 
 
