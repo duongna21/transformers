@@ -589,10 +589,6 @@ def main():
             inputs, max_length=data_args.max_source_length, padding="max_length", truncation=True, return_tensors="np"
         )
 
-        captions = []
-        for caption in examples['summary']:
-            captions.append(tokenizer.bos_token + caption + " " + tokenizer.eos_token)
-        targets = captions
         # Setup the tokenizer for targets
         labels = tokenizer(
             text_target=targets,
@@ -603,11 +599,9 @@ def main():
         )
 
         model_inputs["labels"] = labels["input_ids"]
-        print('example labels ids: ', model_inputs['labels'][0])
         decoder_input_ids = shift_tokens_right_fn(
             labels["input_ids"], config.pad_token_id, config.decoder_start_token_id
         )
-        print('example decoder_input_ids: ', decoder_input_ids[0])
         model_inputs["decoder_input_ids"] = np.asarray(decoder_input_ids)
 
         # We need decoder_attention_mask so we can ignore pad tokens from loss
@@ -684,8 +678,9 @@ def main():
 
         # Some simple post-processing
         decoded_preds, decoded_labels = postprocess_text(decoded_preds, decoded_labels)
+        print('\n\n********************\n'.join(['pred: '+pred+'\nlabel: '+label for pred, label in zip(decoded_preds, decoded_labels)][10:20]))
 
-        result = metric.compute(predictions=decoded_preds, references=decoded_labels, use_stemmer=False)
+        result = metric.compute(predictions=decoded_preds, references=decoded_labels, use_stemmer=True)
         result = {k: round(v * 100, 4) for k, v in result.items()}
         prediction_lens = [np.count_nonzero(pred != tokenizer.pad_token_id) for pred in preds]
         result["gen_len"] = np.mean(prediction_lens)
@@ -813,7 +808,8 @@ def main():
 
         # summarize metrics
         metrics = {"loss": loss}
-        # metrics = jax.lax.pmean(metrics, axis_name="batch")
+        metrics = jax.lax.pmean(metrics, axis_name="batch")
+        metrics["orig_loss"] = loss
         return metrics
 
     # Define generation function
@@ -878,8 +874,8 @@ def main():
         eval_metrics = []
         eval_preds = []
         eval_labels = []
-        eval_loader = data_loader(input_rng, predict_dataset, eval_batch_size, drop_last=False)
-        # eval_loader = data_loader(input_rng, eval_dataset, eval_batch_size, drop_last=False)
+
+        eval_loader = data_loader(input_rng, eval_dataset, eval_batch_size, drop_last=False)
         eval_steps = math.ceil(len(eval_dataset) / eval_batch_size)
         for _ in tqdm(range(eval_steps), desc="Evaluating...", position=2, leave=False):
             # Model forward
@@ -889,8 +885,8 @@ def main():
             metrics = pad_shard_unpad(p_eval_step, static_return=True)(
                 state.params, batch, min_device_batch=per_device_eval_batch_size
             )
+
             eval_metrics.append(metrics)
-            print('\nOrigLoss: ', metrics['original_loss'], metrics['original_loss'].shape)
 
             # generation
             if data_args.predict_with_generate:
