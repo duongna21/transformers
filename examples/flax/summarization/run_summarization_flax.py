@@ -935,7 +935,8 @@ def main():
         pred_generations = []
         pred_labels = []
 
-        pred_loader = data_loader(input_rng, predict_dataset, eval_batch_size, drop_last=False)
+        pred_loader = data_loader(input_rng, eval_dataset, eval_batch_size, drop_last=False)
+        # pred_loader = data_loader(input_rng, predict_dataset, eval_batch_size, drop_last=False)
         pred_steps = math.ceil(len(predict_dataset) / eval_batch_size)
         for _ in tqdm(range(pred_steps), desc="Predicting...", position=2, leave=False):
             # Model forward
