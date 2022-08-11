@@ -359,7 +359,7 @@ def data_loader(rng: jax.random.PRNGKey, dataset: Dataset, batch_size: int, shuf
     for idx in batch_idx:
         batch = dataset[idx]
         batch = {k: np.array(v) for k, v in batch.items()}
-        print('idx: ', idx)
+        print('idx: ', idx.shape)
         yield batch
 
 
@@ -852,7 +852,7 @@ def main():
         train_metrics = []
 
         # Generate an epoch by shuffling sampling indices from the train dataset
-        train_loader = data_loader(input_rng, train_dataset.select(range(10000)), train_batch_size, shuffle=True)
+        train_loader = data_loader(input_rng, train_dataset, train_batch_size, shuffle=True)
         # train_loader = data_loader(input_rng, train_dataset, train_batch_size, shuffle=True)
         steps_per_epoch = len(train_dataset) // train_batch_size
         # train
