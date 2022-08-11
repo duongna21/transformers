@@ -809,7 +809,7 @@ def main():
         # summarize metrics
         metrics = {"loss": loss}
         metrics = jax.lax.pmean(metrics, axis_name="batch")
-        metrics["orig_loss"] = loss
+        metrics["original_loss"] = loss
         return metrics
 
     # Define generation function
@@ -887,6 +887,7 @@ def main():
             )
 
             eval_metrics.append(metrics)
+            print('\nOrigLoss: ', metrics['original_loss'], metrics['original_loss'].shape)
 
             # generation
             if data_args.predict_with_generate:
