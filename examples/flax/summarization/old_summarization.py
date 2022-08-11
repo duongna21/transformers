@@ -887,7 +887,7 @@ def main():
             )
 
             eval_metrics.append(metrics)
-            print('\nOrigLoss: ', metrics['original_loss'][-1], metrics['original_loss'].shape)
+            print('\nOrigLoss: ', metrics['original_loss'][-1][-10:], metrics['original_loss'].shape)
 
             # generation
             if data_args.predict_with_generate:
