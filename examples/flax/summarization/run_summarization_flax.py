@@ -814,7 +814,7 @@ def main():
 
         # summarize metrics
         metrics = {"loss": loss}
-        # metrics = jax.lax.pmean(metrics, axis_name="batch")
+        metrics = jax.lax.pmean(metrics, axis_name="batch")
         return metrics
 
     # Define generation function
