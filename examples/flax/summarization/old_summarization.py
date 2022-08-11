@@ -772,10 +772,10 @@ def main():
         soft_labels = onehot(labels, vocab_size, on_value=confidence, off_value=low_confidence)
 
         loss = optax.softmax_cross_entropy(logits, soft_labels)
-        loss = loss - normalizing_constant
-        original_loss = loss
         # ignore padded tokens from loss
         loss = loss * padding_mask
+        loss = loss - normalizing_constant
+        original_loss = loss
         loss = loss.sum() / padding_mask.sum()
         return loss, original_loss
 
