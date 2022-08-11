@@ -359,7 +359,7 @@ def data_loader(rng: jax.random.PRNGKey, dataset: Dataset, batch_size: int, shuf
     for idx in batch_idx:
         batch = dataset[idx]
         batch = {k: np.array(v) for k, v in batch.items()}
-
+        print('idx: ', idx)
         yield batch
 
 
