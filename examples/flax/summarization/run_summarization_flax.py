@@ -684,6 +684,7 @@ def main():
 
         # Some simple post-processing
         decoded_preds, decoded_labels = postprocess_text(decoded_preds, decoded_labels)
+        print('\n\n********************\n'.join(['pred: '+pred+'\nlabel: '+label for pred, label in zip(decoded_preds, decoded_labels)][10:20]))
 
         result = metric.compute(predictions=decoded_preds, references=decoded_labels, use_stemmer=False)
         result = {k: round(v * 100, 4) for k, v in result.items()}
@@ -890,7 +891,6 @@ def main():
                 state.params, batch, min_device_batch=per_device_eval_batch_size
             )
             eval_metrics.append(metrics)
-            print('\nOrigLoss: ', metrics['original_loss'], metrics['original_loss'].shape)
 
             # generation
             if data_args.predict_with_generate:
