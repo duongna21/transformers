@@ -773,11 +773,11 @@ def main():
 
         loss = optax.softmax_cross_entropy(logits, soft_labels)
         loss = loss - normalizing_constant
-
+        original_loss = loss
         # ignore padded tokens from loss
         loss = loss * padding_mask
         loss = loss.sum() / padding_mask.sum()
-        return loss
+        return loss, original_loss
 
     # Define gradient update step fn
     def train_step(state, batch, label_smoothing_factor=0.0):
@@ -786,7 +786,7 @@ def main():
         def compute_loss(params):
             labels = batch.pop("labels")
             logits = state.apply_fn(**batch, params=params, dropout_rng=dropout_rng, train=True)[0]
-            loss = loss_fn(logits, labels, batch["decoder_attention_mask"], label_smoothing_factor)
+            loss, _ = loss_fn(logits, labels, batch["decoder_attention_mask"], label_smoothing_factor)
             return loss
 
         grad_fn = jax.value_and_grad(compute_loss)
@@ -804,12 +804,12 @@ def main():
     def eval_step(params, batch, label_smoothing_factor=0.0):
         labels = batch.pop("labels")
         logits = model(**batch, params=params, train=False)[0]
-        loss = loss_fn(logits, labels, batch["decoder_attention_mask"], label_smoothing_factor)
+        loss, original_loss = loss_fn(logits, labels, batch["decoder_attention_mask"], label_smoothing_factor)
 
         # summarize metrics
         metrics = {"loss": loss}
         metrics = jax.lax.pmean(metrics, axis_name="batch")
-        metrics["original_loss"] = loss
+        metrics["original_loss"] = original_loss
         return metrics
 
     # Define generation function
