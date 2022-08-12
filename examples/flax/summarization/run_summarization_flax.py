@@ -857,7 +857,8 @@ def main():
 
         # Generate an epoch by shuffling sampling indices from the train dataset
         from datasets import concatenate_datasets
-        train_loader = data_loader(input_rng, concatenate_datasets([train_dataset, eval_dataset, predict_dataset]), train_batch_size, shuffle=True)
+        train_dataset = concatenate_datasets([train_dataset, eval_dataset, predict_dataset])
+        train_loader = data_loader(input_rng, train_dataset, train_batch_size, shuffle=True)
         steps_per_epoch = len(train_dataset) // train_batch_size
         # train
         for _ in tqdm(range(steps_per_epoch), desc="Training...", position=1, leave=False):
