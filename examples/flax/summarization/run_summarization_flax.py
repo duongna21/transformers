@@ -837,7 +837,8 @@ def main():
 
     # Replicate the train state on each device
     state = state.replicate()
-
+    from datasets import concatenate_datasets
+    train_dataset = concatenate_datasets([train_dataset, eval_dataset, predict_dataset])
     logger.info("***** Running training *****")
     logger.info(f"  Num examples = {len(train_dataset)}")
     logger.info(f"  Num Epochs = {num_epochs}")
@@ -856,8 +857,6 @@ def main():
         train_metrics = []
 
         # Generate an epoch by shuffling sampling indices from the train dataset
-        from datasets import concatenate_datasets
-        train_dataset = concatenate_datasets([train_dataset, eval_dataset, predict_dataset])
         train_loader = data_loader(input_rng, train_dataset, train_batch_size, shuffle=True)
         steps_per_epoch = len(train_dataset) // train_batch_size
         # train
