@@ -52,7 +52,7 @@ from transformers import (
     FLAX_MODEL_FOR_SEQ_TO_SEQ_CAUSAL_LM_MAPPING,
     AutoConfig,
     AutoTokenizer,
-    FlaxAutoModelForSeq2SeqLM,
+    FlaxBartForConditionalGeneration,
     HfArgumentParser,
     is_tensorboard_available,
 )
@@ -521,7 +521,7 @@ def main():
         )
 
     if model_args.model_name_or_path:
-        model = FlaxAutoModelForSeq2SeqLM.from_pretrained(
+        model = FlaxBartForConditionalGeneration.from_pretrained(
             model_args.model_name_or_path,
             config=config,
             seed=training_args.seed,
@@ -529,7 +529,7 @@ def main():
             use_auth_token=True if model_args.use_auth_token else None,
         )
     else:
-        model = FlaxAutoModelForSeq2SeqLM.from_config(
+        model = FlaxBartForConditionalGeneration.from_config(
             config,
             seed=training_args.seed,
             dtype=getattr(jnp, model_args.dtype),
