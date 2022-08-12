@@ -583,7 +583,8 @@ def main():
     # Setting padding="max_length" as we need fixed length inputs for jitted functions
     def preprocess_function(examples):
         inputs = examples[text_column]
-        inputs = [prefix + inp for inp in inputs]
+        # inputs = [prefix + inp for inp in inputs]
+        inputs = [tokenizer.bos_token + inp + tokenizer.eos_token for inp in inputs]
         model_inputs = tokenizer(
             inputs, max_length=data_args.max_source_length, padding="max_length", truncation=True, return_tensors="np"
         )
