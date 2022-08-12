@@ -665,6 +665,7 @@ def main():
             desc="Running tokenizer on prediction dataset",
         )
 
+    print('train, eval, predict dataset: ', train_dataset, eval_dataset, predict_dataset)
     # Metric
     metric = evaluate.load("rouge")
 
@@ -684,7 +685,7 @@ def main():
 
         # Some simple post-processing
         decoded_preds, decoded_labels = postprocess_text(decoded_preds, decoded_labels)
-        print('\n\n********************\n'.join(['pred: '+pred+'\nlabel: '+label for pred, label in zip(decoded_preds, decoded_labels)][10:20]))
+        print('\n\n********************\n'.join(['pred: ' + pred + '\nlabel: ' + label for pred, label in zip(decoded_preds, decoded_labels)][10:20]))
 
         result = metric.compute(predictions=decoded_preds, references=decoded_labels, use_stemmer=False)
         result = {k: round(v * 100, 4) for k, v in result.items()}
