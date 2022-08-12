@@ -879,9 +879,10 @@ def main():
         eval_metrics = []
         eval_preds = []
         eval_labels = []
-        eval_loader = data_loader(input_rng, predict_dataset, eval_batch_size, shuffle=True)
+        eval_loader = data_loader(input_rng, predict_dataset, eval_batch_size, drop_last=False)
+        print('eval loader: ', eval_loader)
         # eval_loader = data_loader(input_rng, eval_dataset, eval_batch_size, drop_last=False)
-        eval_steps = math.ceil(len(eval_dataset) / eval_batch_size)
+        eval_steps = math.ceil(len(eval_dataset) // eval_batch_size)
         for _ in tqdm(range(eval_steps), desc="Evaluating...", position=2, leave=False):
             # Model forward
             batch = next(eval_loader)
