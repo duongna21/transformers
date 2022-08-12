@@ -839,7 +839,7 @@ def main():
     # Replicate the train state on each device
     state = state.replicate()
     from datasets import concatenate_datasets
-    train_dataset = concatenate_datasets([train_dataset, eval_dataset, predict_dataset])
+    # train_dataset = concatenate_datasets([train_dataset, eval_dataset, predict_dataset])
     logger.info("***** Running training *****")
     logger.info(f"  Num examples = {len(train_dataset)}")
     logger.info(f"  Num Epochs = {num_epochs}")
