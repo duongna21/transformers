@@ -777,7 +777,7 @@ def main():
         )
         soft_labels = onehot(labels, vocab_size, on_value=confidence, off_value=low_confidence)
 
-        loss = optax.softmax_cross_entropy(logits, soft_labxels)
+        loss = optax.softmax_cross_entropy(logits, soft_labels)
         loss = loss - normalizing_constant
 
         # ignore padded tokens from loss
@@ -881,7 +881,7 @@ def main():
         eval_preds = []
         eval_labels = []
         # eval_loader = data_loader(input_rng, predict_dataset, eval_batch_size, drop_last=False)
-        eval_loader = data_loader(input_rng, predict_dataset, eval_batch_size, drop_last=False)
+        eval_loader = data_loader(input_rng, eval_dataset, eval_batch_size, drop_last=False)
         eval_steps = math.ceil(len(eval_dataset) // eval_batch_size)
         for _ in tqdm(range(eval_steps), desc="Evaluating...", position=2, leave=False):
             # Model forward
