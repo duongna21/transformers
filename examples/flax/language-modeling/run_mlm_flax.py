@@ -639,7 +639,7 @@ def main():
             seed=training_args.seed,
             dtype=getattr(jnp, model_args.dtype),
         )
-
+    print('Loaded model sucessfully!')
     # Store some constant
     num_epochs = int(training_args.num_train_epochs)
     train_batch_size = int(training_args.per_device_train_batch_size) * jax.device_count()
