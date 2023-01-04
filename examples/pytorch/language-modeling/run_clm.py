@@ -413,10 +413,11 @@ def main():
         n_params = sum(dict((p.data_ptr(), p.numel()) for p in model.parameters()).values())
         logger.info(f"Training new model from scratch - Total size={n_params/2**20:.2f}M params")
 
-    if is_xformers_available():
-        model.transformers.set_use_memory_efficient_attention_xformers(True)
-    else:
-        raise ValueError("xformers is not available. Make sure it is installed correctly")
+    if model_args.enable_xformers_memory_efficient_attention:
+        if is_xformers_available():
+            model.transformers.set_use_memory_efficient_attention_xformers(True)
+        else:
+            raise ValueError("xformers is not available. Make sure it is installed correctly")
 
     # We resize the embeddings only when necessary to avoid index errors. If you are creating a model from scratch
     # on a small vocab and want a smaller embedding size, remove this test.
