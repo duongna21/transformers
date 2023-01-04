@@ -337,13 +337,10 @@ class GPT2Attention(nn.Module):
         if self.reorder_and_upcast_attn:
             attn_output, attn_weights = self._upcast_and_reordered_attn(query, key, value, attention_mask, head_mask)
         else:
-            print(f"\n\nattention_mask: {attention_mask}")
-            print(f"\n\nhead_mask: {head_mask}")
-            print(f"\n\nis_cross_attention: {self.is_cross_attention}")
             if  self._use_memory_efficient_attention_xformers and not attention_mask.mean() and not head_mask and not self.is_cross_attention:
-                query = query.reshape(-1, query.size()[-2:])
-                key = key.reshape(-1, key.size()[-2:])
-                value = value.reshape(-1, value.size()[-2:])
+                query = query.reshape(-1, query.size()[-2], query.size()[-2])
+                key = key.reshape(-1, key.size()[-2], key.size()[-2])
+                value = value.reshape(-1, value.size()[-2], value.size()[-2])
                 attn_output = self._memory_efficient_attention_xformers(query, key, value, p=self.attn_pdrop, bias=xformers.ops.LowerTriangularMask())
                 output_attentions = False
             else:
