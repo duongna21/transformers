@@ -121,6 +121,14 @@ class ModelArguments:
             )
         },
     )
+    enable_xformers_memory_efficient_attention: bool = field(
+        default=False,
+        metadata={
+            "help": (
+                "Whether or not to use xformers."
+            )
+        },
+    )
     torch_dtype: Optional[str] = field(
         default=None,
         metadata={
