@@ -347,6 +347,9 @@ class CLIPAttention(nn.Module):
 
         return attn_output, attn_weights_reshaped
 
+    def _memory_efficient_attention_xformers(self, query, key, value, p=None):
+        hidden_states = xformers.ops.memory_efficient_attention(query, key, value)
+        return hidden_states
 
 class CLIPMLP(nn.Module):
     def __init__(self, config):
