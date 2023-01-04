@@ -625,7 +625,7 @@ class CLIPEncoder(nn.Module):
         self.layers = nn.ModuleList([CLIPEncoderLayer(config) for _ in range(config.num_hidden_layers)])
         self.gradient_checkpointing = False
 
-    def set_use_memory_efficient_attention_xformers(self, use_memory_efficient_attention_xformers: bool):
+    def _set_use_memory_efficient_attention_xformers(self, use_memory_efficient_attention_xformers: bool):
         for block in self.layers:
             block._set_use_memory_efficient_attention_xformers(use_memory_efficient_attention_xformers)
 
@@ -820,6 +820,9 @@ class CLIPTextModel(CLIPPreTrainedModel):
         self.text_model = CLIPTextTransformer(config)
         # Initialize weights and apply final processing
         self.post_init()
+
+    def set_use_memory_efficient_attention_xformers(self, use_memory_efficient_attention_xformers: bool):
+        self.text_model.encoder._set_use_memory_efficient_attention_xformers(use_memory_efficient_attention_xformers)
 
     def get_input_embeddings(self) -> nn.Module:
         return self.text_model.embeddings.token_embedding
