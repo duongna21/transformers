@@ -415,7 +415,7 @@ def main():
 
     if model_args.enable_xformers_memory_efficient_attention:
         if is_xformers_available():
-            model.transformers.set_use_memory_efficient_attention_xformers(True)
+            model.transformer.set_use_memory_efficient_attention_xformers(True)
         else:
             raise ValueError("xformers is not available. Make sure it is installed correctly")
 
