@@ -356,8 +356,8 @@ class GPT2Attention(nn.Module):
 
         return outputs  # a, present, (attentions)
 
-    def _memory_efficient_attention_xformers(self, query, key, value):
-        hidden_states = xformers.ops.x(query, key, value, attn_bias=None)
+    def _memory_efficient_attention_xformers(self, query, key, value, p=None, attn_bias=None):
+        hidden_states = xformers.ops.memory_efficient_attention(query, key, value, p=p, attn_bias=attn_bias)
         hidden_states = self.reshape_batch_dim_to_heads(hidden_states)
         return hidden_states
 
