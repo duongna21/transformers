@@ -288,8 +288,8 @@ class CLIPAttention(nn.Module):
 
         src_len = key_states.size(1)
 
-        if self._use_memory_efficient_attention_xformers and not attention_mask.mean() and not causal_attention_mask:
-            attn_output = self._memory_efficient_attention_xformers(query_states, key_states, value_states, p=self.dropout)
+        if self._use_memory_efficient_attention_xformers and not causal_attention_mask:
+            attn_output = self._memory_efficient_attention_xformers(query_states, key_states, value_states, attn_bias=attention_mask, p=self.dropout)
         else:
             attn_weights = torch.bmm(query_states, key_states.transpose(1, 2))
 
@@ -347,8 +347,8 @@ class CLIPAttention(nn.Module):
 
         return attn_output, attn_weights_reshaped
 
-    def _memory_efficient_attention_xformers(self, query, key, value, p=None):
-        hidden_states = xformers.ops.memory_efficient_attention(query, key, value)
+    def _memory_efficient_attention_xformers(self, query, key, value, attn_bias=None, p=None):
+        hidden_states = xformers.ops.memory_efficient_attention(query, key, value, attn_bias=attn_bias, p=p)
         return hidden_states
 
 class CLIPMLP(nn.Module):
