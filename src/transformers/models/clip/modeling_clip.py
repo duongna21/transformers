@@ -282,15 +282,14 @@ class CLIPAttention(nn.Module):
         value_states = self._shape(self.v_proj(hidden_states), -1, bsz)
 
         proj_shape = (bsz * self.num_heads, -1, self.head_dim)
-        query_states = self._shape(query_states, tgt_len, bsz).view(*proj_shape).view(bsz, self.num_heads, -1, self.head_dim).transpose(1, 2).contiguous()
-        key_states = key_states.view(*proj_shape).view(bsz, self.num_heads, -1, self.head_dim).transpose(1, 2).contiguous()
-        value_states = value_states.view(*proj_shape).view(bsz, self.num_heads, -1, self.head_dim).transpose(1, 2).contiguous()
+        query_states = self._shape(query_states, tgt_len, bsz).view(*proj_shape)
+        key_states = key_states.view(*proj_shape)
+        value_states = value_states.view(*proj_shape)
 
         src_len = key_states.size(1)
-        print(f"causal_attention_mask: {causal_attention_mask}")
+
         if self._use_memory_efficient_attention_xformers:
             attn_output = self._memory_efficient_attention_xformers(query_states, key_states, value_states, attn_bias=xformers.ops.LowerTriangularMask(), p=self.dropout)
-            attn_output = self._shape(attn_output, -1, bsz).view(bsz * self.num_heads, -1, self.head_dim)
         else:
             attn_weights = torch.bmm(query_states, key_states.transpose(1, 2))
 
@@ -352,7 +351,7 @@ class CLIPAttention(nn.Module):
         return attn_output, attn_weights_reshaped
 
     def _memory_efficient_attention_xformers(self, query, key, value, attn_bias=None, p=None):
-        hidden_states = xformers.ops.memory_efficient_attention(query, key, value, attn_bias=attn_bias, p=p)
+        hidden_states = xformers.ops.memory_efficient_attention(query, key, value, scale=1, attn_bias=attn_bias, p=p)
         return hidden_states
 
 class CLIPMLP(nn.Module):
