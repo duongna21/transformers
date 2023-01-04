@@ -340,7 +340,7 @@ class GPT2Attention(nn.Module):
             print(f"\n\nattention_mask: {attention_mask}")
             print(f"\n\nhead_mask: {head_mask}")
             print(f"\n\nis_cross_attention: {self.is_cross_attention}")
-            if  self._use_memory_efficient_attention_xformers and not attention_mask and not head_mask and not self.is_cross_attention:
+            if  self._use_memory_efficient_attention_xformers and not attention_mask.mean() and not head_mask and not self.is_cross_attention:
                 query = query.reshape(-1, query.size()[-2:])
                 key = key.reshape(-1, key.size()[-2:])
                 value = value.reshape(-1, value.size()[-2:])
