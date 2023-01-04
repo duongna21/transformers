@@ -277,7 +277,7 @@ class CLIPAttention(nn.Module):
         bsz, tgt_len, embed_dim = hidden_states.size()
 
         # get query proj
-        query_states = self.q_proj(hidden_states) * self.scale
+        query_states = self.q_proj(hidden_states) #* self.scale
         key_states = self._shape(self.k_proj(hidden_states), -1, bsz)
         value_states = self._shape(self.v_proj(hidden_states), -1, bsz)
 
@@ -289,6 +289,7 @@ class CLIPAttention(nn.Module):
         src_len = key_states.size(1)
 
         if self._use_memory_efficient_attention_xformers:
+            print("\n\nuse xformers")
             attn_output = self._memory_efficient_attention_xformers(query_states, key_states, value_states, attn_bias=xformers.ops.LowerTriangularMask(), p=self.dropout)
         else:
             attn_weights = torch.bmm(query_states, key_states.transpose(1, 2))
@@ -828,6 +829,7 @@ class CLIPTextModel(CLIPPreTrainedModel):
         self.post_init()
 
     def set_use_memory_efficient_attention_xformers(self, use_memory_efficient_attention_xformers: bool):
+        print("set_use_memory_efficient_attention_xformers!")
         self.text_model.encoder._set_use_memory_efficient_attention_xformers(use_memory_efficient_attention_xformers)
 
     def get_input_embeddings(self) -> nn.Module:
