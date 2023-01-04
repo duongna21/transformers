@@ -442,6 +442,9 @@ class CLIPEncoderLayer(nn.Module):
 
         outputs = (hidden_states,)
 
+        if self.self_attn._use_memory_efficient_attention_xformers:
+            output_attentions = False
+
         if output_attentions:
             outputs += (attn_weights,)
 
