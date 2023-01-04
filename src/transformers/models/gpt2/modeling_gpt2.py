@@ -337,7 +337,7 @@ class GPT2Attention(nn.Module):
         if self.reorder_and_upcast_attn:
             attn_output, attn_weights = self._upcast_and_reordered_attn(query, key, value, attention_mask, head_mask)
         else:
-            if  self._use_memory_efficient_attention_xformers and not attention_mask.mean() and not head_mask and not self.is_cross_attention:
+            if self._use_memory_efficient_attention_xformers and not attention_mask.mean() and not head_mask and not self.is_cross_attention:
                 batch_size, seq_len = query.size()[0], query.size()[2]
                 query = query.reshape(batch_size * self.num_heads, seq_len, self.head_dim)
                 key = key.reshape(batch_size * self.num_heads, seq_len, self.head_dim)
