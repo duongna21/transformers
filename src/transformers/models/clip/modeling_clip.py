@@ -287,7 +287,7 @@ class CLIPAttention(nn.Module):
         value_states = value_states.view(*proj_shape)
 
         src_len = key_states.size(1)
-
+        print(f"causal_attention_mask: {causal_attention_mask}")
         if self._use_memory_efficient_attention_xformers:
             attn_output = self._memory_efficient_attention_xformers(query_states, key_states, value_states)
         else:
