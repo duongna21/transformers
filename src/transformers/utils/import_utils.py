@@ -275,6 +275,18 @@ try:
 except importlib_metadata.PackageNotFoundError:
     _decord_availale = False
 
+_xformers_available = importlib.util.find_spec("xformers") is not None
+try:
+    _xformers_version = importlib_metadata.version("xformers")
+    if _torch_available:
+        import torch
+
+        if torch.__version__ < version.Version("1.12"):
+            raise ValueError("PyTorch should be >= 1.12")
+    logger.debug(f"Successfully imported xformers version {_xformers_version}")
+except importlib_metadata.PackageNotFoundError:
+    _xformers_available = False
+
 # This is the version of torch required to run torch.fx features and torch.onnx with dictionary inputs.
 TORCH_FX_REQUIRED_VERSION = version.parse("1.10")
 TORCH_ONNX_DICT_INPUTS_MINIMUM_VERSION = version.parse("1.8")
@@ -727,6 +739,11 @@ def is_sudachi_available():
 
 def is_jumanpp_available():
     return (importlib.util.find_spec("rhoknp") is not None) and (shutil.which("jumanpp") is not None)
+
+
+def is_xformers_available():
+    return _xformers_available
+
 
 
 # docstyle-ignore

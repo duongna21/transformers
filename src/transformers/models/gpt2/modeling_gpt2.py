@@ -46,6 +46,14 @@ from ...utils import (
 from ...utils.model_parallel_utils import assert_device_map, get_device_map
 from .configuration_gpt2 import GPT2Config
 
+from transformers.utils.import_utils import is_xformers_available
+
+
+if is_xformers_available():
+    import xformers
+    import xformers.ops
+else:
+    xformers = None
 
 logger = logging.get_logger(__name__)
 
@@ -142,6 +150,7 @@ class GPT2Attention(nn.Module):
                 f"`embed_dim` must be divisible by num_heads (got `embed_dim`: {self.embed_dim} and `num_heads`:"
                 f" {self.num_heads})."
             )
+        self._use_memory_efficient_attention_xformers = False
 
         self.scale_attn_weights = config.scale_attn_weights
         self.is_cross_attention = is_cross_attention
@@ -158,7 +167,8 @@ class GPT2Attention(nn.Module):
             self.c_attn = Conv1D(3 * self.embed_dim, self.embed_dim)
         self.c_proj = Conv1D(self.embed_dim, self.embed_dim)
 
-        self.attn_dropout = nn.Dropout(config.attn_pdrop)
+        self.attn_pdrop = config.attn_pdrop
+        self.attn_dropout = nn.Dropout(self.attn_pdrop)
         self.resid_dropout = nn.Dropout(config.resid_pdrop)
 
         self.pruned_heads = set()
@@ -327,7 +337,14 @@ class GPT2Attention(nn.Module):
         if self.reorder_and_upcast_attn:
             attn_output, attn_weights = self._upcast_and_reordered_attn(query, key, value, attention_mask, head_mask)
         else:
-            attn_output, attn_weights = self._attn(query, key, value, attention_mask, head_mask)
+            if  self._use_memory_efficient_attention_xformers and not attention_mask and not head_mask and not self.is_cross_attention:
+                query = query.reshape(-1, query.size()[-2:])
+                key = key.reshape(-1, key.size()[-2:])
+                value = value.reshape(-1, value.size()[-2:])
+                attn_output = self._memory_efficient_attention_xformers(query, key, value, p=self.attn_pdrop, bias=xformers.ops.LowerTriangularMask())
+                output_attentions = False
+            else:
+                attn_output, attn_weights = self._attn(query, key, value, attention_mask, head_mask)
 
         attn_output = self._merge_heads(attn_output, self.num_heads, self.head_dim)
         attn_output = self.c_proj(attn_output)
@@ -339,6 +356,10 @@ class GPT2Attention(nn.Module):
 
         return outputs  # a, present, (attentions)
 
+    def _memory_efficient_attention_xformers(self, query, key, value):
+        hidden_states = xformers.ops.x(query, key, value, attn_bias=None)
+        hidden_states = self.reshape_batch_dim_to_heads(hidden_states)
+        return hidden_states
 
 class GPT2MLP(nn.Module):
     def __init__(self, intermediate_size, config):
@@ -372,6 +393,31 @@ class GPT2Block(nn.Module):
             self.ln_cross_attn = nn.LayerNorm(hidden_size, eps=config.layer_norm_epsilon)
 
         self.mlp = GPT2MLP(inner_dim, config)
+
+    def _set_use_memory_efficient_attention_xformers(self, use_memory_efficient_attention_xformers: bool):
+        if not is_xformers_available():
+            print("Here is how to install it")
+            raise ModuleNotFoundError(
+                "Refer to https://github.com/facebookresearch/xformers for more information on how to install"
+                " xformers",
+                name="xformers",
+            )
+        elif not torch.cuda.is_available():
+            raise ValueError(
+                "torch.cuda.is_available() should be True but is False. xformers' memory efficient attention is only"
+                " available for GPU "
+            )
+        else:
+            try:
+                # Make sure we can run the memory efficient attention
+                _ = xformers.ops.memory_efficient_attention(
+                    torch.randn((1, 2, 40), device="cuda"),
+                    torch.randn((1, 2, 40), device="cuda"),
+                    torch.randn((1, 2, 40), device="cuda"),
+                )
+            except Exception as e:
+                raise e
+            self.attn._use_memory_efficient_attention_xformers = use_memory_efficient_attention_xformers
 
     def forward(
         self,
@@ -686,6 +732,10 @@ class GPT2Model(GPT2PreTrainedModel):
 
         # Initialize weights and apply final processing
         self.post_init()
+
+    def set_use_memory_efficient_attention_xformers(self, use_memory_efficient_attention_xformers: bool):
+        for block in self.transformer_blocks:
+            block._set_use_memory_efficient_attention_xformers(use_memory_efficient_attention_xformers)
 
     @add_start_docstrings(PARALLELIZE_DOCSTRING)
     def parallelize(self, device_map=None):
