@@ -343,7 +343,7 @@ class GPT2Attention(nn.Module):
                 print(f"\n\nquery shape after: {query.shape}")
                 key = key.reshape(-1, key.size()[-2], key.size()[-1])
                 value = value.reshape(-1, value.size()[-2], value.size()[-1])
-                attn_output = self._memory_efficient_attention_xformers(query, key, value, p=self.attn_pdrop, bias=xformers.ops.LowerTriangularMask())
+                attn_output = self._memory_efficient_attention_xformers(query, key, value, p=self.attn_pdrop)
                 output_attentions = False
             else:
                 attn_output, attn_weights = self._attn(query, key, value, attention_mask, head_mask)
@@ -358,8 +358,8 @@ class GPT2Attention(nn.Module):
 
         return outputs  # a, present, (attentions)
 
-    def _memory_efficient_attention_xformers(self, query, key, value, p=None, bias=None):
-        hidden_states = xformers.ops.memory_efficient_attention(query, key, value, p=p, attn_bias=bias)
+    def _memory_efficient_attention_xformers(self, query, key, value, p=None):
+        hidden_states = xformers.ops.memory_efficient_attention(query, key, value, p=p, attn_bias=xformers.ops.LowerTriangularMask())
         hidden_states = self.reshape_batch_dim_to_heads(hidden_states)
         return hidden_states
 
