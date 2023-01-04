@@ -288,7 +288,6 @@ class CLIPAttention(nn.Module):
 
         src_len = key_states.size(1)
         print(f"causal_attention_mask: {causal_attention_mask}")
-        print(f"\n\nxformers.ops.LowerTriangularMask(): {xformers.ops.LowerTriangularMask().to_tensor()}")
         if self._use_memory_efficient_attention_xformers:
             attn_output = self._memory_efficient_attention_xformers(query_states, key_states, value_states, attn_bias=xformers.ops.LowerTriangularMask(), p=self.dropout)
         else:
