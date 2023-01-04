@@ -282,9 +282,9 @@ class CLIPAttention(nn.Module):
         value_states = self._shape(self.v_proj(hidden_states), -1, bsz)
 
         proj_shape = (bsz * self.num_heads, -1, self.head_dim)
-        query_states = self._shape(query_states, tgt_len, bsz).view(*proj_shape)
-        key_states = key_states.view(*proj_shape)
-        value_states = value_states.view(*proj_shape)
+        query_states = self._shape(query_states, tgt_len, bsz).view(*proj_shape).view(bsz, self.num_heads, -1, self.head_dim).transpose(1, 2).contiguous()
+        key_states = key_states.view(*proj_shape).view(bsz, self.num_heads, -1, self.head_dim).transpose(1, 2).contiguous()
+        value_states = value_states.view(*proj_shape).view(bsz, self.num_heads, -1, self.head_dim).transpose(1, 2).contiguous()
 
         src_len = key_states.size(1)
         print(f"causal_attention_mask: {causal_attention_mask}")
