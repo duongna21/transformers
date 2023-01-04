@@ -346,7 +346,10 @@ class CLIPAttention(nn.Module):
 
         attn_output = self.out_proj(attn_output)
 
-        return attn_output, attn_weights_reshaped
+        if self._use_memory_efficient_attention_xformers:
+            return attn_output, None
+        else:
+            return attn_output, attn_weights_reshaped
 
     def _memory_efficient_attention_xformers(self, query, key, value, attn_bias=None, p=None):
         hidden_states = xformers.ops.memory_efficient_attention(query, key, value, attn_bias=attn_bias, p=p)
