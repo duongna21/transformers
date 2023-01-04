@@ -289,7 +289,7 @@ class CLIPAttention(nn.Module):
         src_len = key_states.size(1)
 
         if self._use_memory_efficient_attention_xformers:
-            attn_output = self._memory_efficient_attention_xformers(query_states, key_states, value_states, attn_bias=xformers.ops.LowerTriangularMask())
+            attn_output = self._memory_efficient_attention_xformers(query_states, key_states, value_states)
         else:
             attn_weights = torch.bmm(query_states, key_states.transpose(1, 2))
 
