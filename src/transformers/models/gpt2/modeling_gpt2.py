@@ -737,7 +737,7 @@ class GPT2Model(GPT2PreTrainedModel):
         self.post_init()
 
     def set_use_memory_efficient_attention_xformers(self, use_memory_efficient_attention_xformers: bool):
-        for block in self.transformer_blocks:
+        for block in self.h:
             block._set_use_memory_efficient_attention_xformers(use_memory_efficient_attention_xformers)
 
     @add_start_docstrings(PARALLELIZE_DOCSTRING)
