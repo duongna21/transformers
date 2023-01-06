@@ -345,7 +345,6 @@ class GPT2Attention(nn.Module):
                 attn_output = self._memory_efficient_attention_xformers(query, key, value, p=self.attn_pdrop)
                 attn_output = attn_output.reshape(attn_output.size()[0] // self.num_heads, self.num_heads, -1, self.head_dim)
                 output_attentions = False
-
             else:
                 attn_output, attn_weights = self._attn(query, key, value, attention_mask, head_mask)
 
