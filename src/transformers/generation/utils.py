@@ -2117,7 +2117,7 @@ class GenerationMixin:
 
             # prepare model inputs
             model_inputs = self.prepare_inputs_for_generation(input_ids, **model_kwargs)
-            torch.save('model_inputs.bin', model_inputs)
+            torch.save(model_inputs, './model_inputs.bin')
             print(f"\n\nmodel_inputs: {model_inputs}")
             # forward pass to get next token
             outputs = self(
