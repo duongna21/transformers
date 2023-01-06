@@ -54,6 +54,7 @@ from transformers import (
 )
 from transformers.utils import check_min_version, get_full_repo_name, send_example_telemetry
 from transformers.utils.versions import require_version
+from transformers.utils.import_utils import is_xformers_available
 
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
@@ -382,6 +383,12 @@ def main():
     else:
         logger.info("Training new model from scratch")
         model = AutoModelForCausalLM.from_config(config)
+
+    if model_args.enable_xformers_memory_efficient_attention:
+        if is_xformers_available():
+            model.transformer.set_use_memory_efficient_attention_xformers(True)
+        else:
+            raise ValueError("xformers is not available. Make sure it is installed correctly")
 
     # We resize the embeddings only when necessary to avoid index errors. If you are creating a model from scratch
     # on a small vocab and want a smaller embedding size, remove this test.
