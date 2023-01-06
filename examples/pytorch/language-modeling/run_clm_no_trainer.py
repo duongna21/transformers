@@ -384,7 +384,7 @@ def main():
         logger.info("Training new model from scratch")
         model = AutoModelForCausalLM.from_config(config)
 
-    if model_args.enable_xformers_memory_efficient_attention:
+    if args.enable_xformers_memory_efficient_attention:
         if is_xformers_available():
             model.transformer.set_use_memory_efficient_attention_xformers(True)
         else:
