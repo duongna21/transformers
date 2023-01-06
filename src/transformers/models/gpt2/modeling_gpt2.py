@@ -337,13 +337,11 @@ class GPT2Attention(nn.Module):
         if self.reorder_and_upcast_attn:
             attn_output, attn_weights = self._upcast_and_reordered_attn(query, key, value, attention_mask, head_mask)
         else:
-            if self._use_memory_efficient_attention_xformers and not attention_mask.mean() and not head_mask and not self.is_cross_attention:
-                batch_size, seq_len = query.size()[0], query.size()[2]
-                query = query.reshape(batch_size * self.num_heads, seq_len, self.head_dim)
-                key = key.reshape(batch_size * self.num_heads, seq_len, self.head_dim)
-                value = value.reshape(batch_size * self.num_heads, seq_len, self.head_dim)
+            if  self._use_memory_efficient_attention_xformers and not attention_mask.mean() and not head_mask and not self.is_cross_attention:
+                query = query.reshape(-1, query.size()[-2], query.size()[-1])
+                key = key.reshape(-1, key.size()[-2], key.size()[-1])
+                value = value.reshape(-1, value.size()[-2], value.size()[-1])
                 attn_output = self._memory_efficient_attention_xformers(query, key, value, p=self.attn_pdrop)
-                attn_output = attn_output.reshape(attn_output.size()[0] // self.num_heads, self.num_heads, seq_len, self.head_dim)
                 output_attentions = False
             else:
                 attn_output, attn_weights = self._attn(query, key, value, attention_mask, head_mask)
@@ -358,8 +356,9 @@ class GPT2Attention(nn.Module):
 
         return outputs  # a, present, (attentions)
 
-    def _memory_efficient_attention_xformers(self, query, key, value, p=0):
-        hidden_states = xformers.ops.memory_efficient_attention(query, key, value, p=p)
+    def _memory_efficient_attention_xformers(self, query, key, value, p=None):
+        hidden_states = xformers.ops.memory_efficient_attention(query, key, value)
+        # hidden_states = self.reshape_batch_dim_to_heads(hidden_states)
         return hidden_states
 
 class GPT2MLP(nn.Module):
