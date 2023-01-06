@@ -328,9 +328,12 @@ class GPT2Attention(nn.Module):
         # print(f"query.mean(), key.mean(), value.mean(): ", query.shape, key.shape, value.shape)
 
         if layer_past is not None:
+            attn_bias = None
             past_key, past_value = layer_past
             key = torch.cat((past_key, key), dim=-2)
             value = torch.cat((past_value, value), dim=-2)
+        else:
+            attn_bias = xformers.ops.LowerTriangularMask()
 
         # print(f"\nquery.mean(), key.mean(), value.mean(): ", query.mean().data, key.mean().data, value.mean().data)
         # print(f"query.mean(), key.mean(), value.mean(): ", query.shape, key.shape, value.shape)
@@ -347,7 +350,7 @@ class GPT2Attention(nn.Module):
                 query = query.reshape(batch_size * self.num_heads, src_len, self.head_dim)
                 key = key.reshape(batch_size * self.num_heads, tgt_len, self.head_dim)
                 value = value.reshape(batch_size * self.num_heads, tgt_len, self.head_dim)
-                attn_output = self._memory_efficient_attention_xformers(query, key, value, p=self.attn_pdrop)
+                attn_output = self._memory_efficient_attention_xformers(query, key, value, attn_bias=attn_bias, p=self.attn_pdrop)
                 attn_output = attn_output.reshape(attn_output.size()[0] // self.num_heads, self.num_heads, -1, self.head_dim)
                 output_attentions = False
 
@@ -365,8 +368,8 @@ class GPT2Attention(nn.Module):
 
         return outputs  # a, present, (attentions)
 
-    def _memory_efficient_attention_xformers(self, query, key, value, p=0):
-        hidden_states = xformers.ops.memory_efficient_attention(query, key, value, p=p)
+    def _memory_efficient_attention_xformers(self, query, key, value, attn_bias=None, p=0):
+        hidden_states = xformers.ops.memory_efficient_attention(query, key, value, attn_bias=attn_bias, p=p)
         return hidden_states
 
 class GPT2MLP(nn.Module):
