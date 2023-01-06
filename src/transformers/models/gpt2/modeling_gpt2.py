@@ -338,14 +338,13 @@ class GPT2Attention(nn.Module):
             attn_output, attn_weights = self._upcast_and_reordered_attn(query, key, value, attention_mask, head_mask)
         else:
             if  self._use_memory_efficient_attention_xformers:
-                _, attn_weights = self._attn(query, key, value, attention_mask, head_mask)
                 batch_size, src_len, tgt_len = query.size()[0], query.size()[2], key.size()[2]
                 query = query.reshape(batch_size * self.num_heads, src_len, self.head_dim)
                 key = key.reshape(batch_size * self.num_heads, tgt_len, self.head_dim)
                 value = value.reshape(batch_size * self.num_heads, tgt_len, self.head_dim)
                 attn_output = self._memory_efficient_attention_xformers(query, key, value, p=self.attn_pdrop)
                 attn_output = attn_output.reshape(attn_output.size()[0] // self.num_heads, self.num_heads, -1, self.head_dim)
-                # output_attentions = False
+                output_attentions = False
 
             else:
                 attn_output, attn_weights = self._attn(query, key, value, attention_mask, head_mask)
