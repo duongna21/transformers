@@ -324,7 +324,7 @@ class GPT2Attention(nn.Module):
         key = self._split_heads(key, self.num_heads, self.head_dim)
         value = self._split_heads(value, self.num_heads, self.head_dim)
 
-        print(f"\nquery.mean(), key.mean(), value.mean(): ", query.mean().data,
+        print(f"\nquery.mean(), key.mean(), value.mean(): ", attention_mask, query.mean().data,
               key.mean().data, value.mean().data)
 
         if layer_past is not None:
@@ -340,7 +340,7 @@ class GPT2Attention(nn.Module):
         if self.reorder_and_upcast_attn:
             attn_output, attn_weights = self._upcast_and_reordered_attn(query, key, value, attention_mask, head_mask)
         else:
-            if  self._use_memory_efficient_attention_xformers:
+            if self._use_memory_efficient_attention_xformers:
                 batch_size, src_len, tgt_len = query.size()[0], query.size()[2], key.size()[2]
                 query = query.reshape(batch_size * self.num_heads, src_len, self.head_dim)
                 key = key.reshape(batch_size * self.num_heads, tgt_len, self.head_dim)
