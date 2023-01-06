@@ -53,6 +53,7 @@ from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version, send_example_telemetry
 from transformers.utils.versions import require_version
 
+from transformers.utils.import_utils import is_xformers_available
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
 check_min_version("4.26.0.dev0")
@@ -117,6 +118,14 @@ class ModelArguments:
             "help": (
                 "Will use the token generated when running `huggingface-cli login` (necessary to use this script "
                 "with private models)."
+            )
+        },
+    )
+    enable_xformers_memory_efficient_attention: bool = field(
+        default=False,
+        metadata={
+            "help": (
+                "Whether or not to use xformers."
             )
         },
     )
@@ -403,6 +412,12 @@ def main():
         model = AutoModelForCausalLM.from_config(config)
         n_params = sum(dict((p.data_ptr(), p.numel()) for p in model.parameters()).values())
         logger.info(f"Training new model from scratch - Total size={n_params/2**20:.2f}M params")
+
+    if model_args.enable_xformers_memory_efficient_attention:
+        if is_xformers_available():
+            model.transformer.set_use_memory_efficient_attention_xformers(True)
+        else:
+            raise ValueError("xformers is not available. Make sure it is installed correctly")
 
     # We resize the embeddings only when necessary to avoid index errors. If you are creating a model from scratch
     # on a small vocab and want a smaller embedding size, remove this test.
