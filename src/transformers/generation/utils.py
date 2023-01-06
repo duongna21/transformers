@@ -2125,7 +2125,7 @@ class GenerationMixin:
                 output_attentions=output_attentions,
                 output_hidden_states=output_hidden_states,
             )
-            print(f"outputs: {outputs}")
+            # print(f"outputs: {outputs}")
 
             if synced_gpus and this_peer_finished:
                 continue  # don't waste resources running the code we don't need
