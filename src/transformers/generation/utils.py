@@ -2131,10 +2131,11 @@ class GenerationMixin:
                 continue  # don't waste resources running the code we don't need
 
             next_token_logits = outputs.logits[:, -1, :]
-            print(f"next_token_logits: {next_token_logits}")
+            print(f"next_token_logits: {next_token_logits, next_token_logits.shape}")
 
             # pre-process distribution
             next_tokens_scores = logits_processor(input_ids, next_token_logits)
+            print(f"next_tokens_scores: {next_tokens_scores, next_tokens_scores.shape}")
 
             # Store scores, attentions and hidden_states when required
             if return_dict_in_generate:
