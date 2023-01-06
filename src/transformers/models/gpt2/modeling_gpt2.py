@@ -354,6 +354,7 @@ class GPT2Attention(nn.Module):
         attn_output = self.resid_dropout(attn_output)
 
         outputs = (attn_output, present)
+        print(f"attn_output: {attn_output}")
         if output_attentions:
             outputs += (attn_weights,)
 
