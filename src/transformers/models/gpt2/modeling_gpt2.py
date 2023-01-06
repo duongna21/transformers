@@ -324,11 +324,19 @@ class GPT2Attention(nn.Module):
         key = self._split_heads(key, self.num_heads, self.head_dim)
         value = self._split_heads(value, self.num_heads, self.head_dim)
 
+        # print(f"\nquery.mean(), key.mean(), value.mean(): ", self.is_cross_attention, query.mean().data, key.mean().data, value.mean().data)
+        # print(f"query.mean(), key.mean(), value.mean(): ", query.shape, key.shape, value.shape)
+
         if layer_past is not None:
+            attn_bias = None
             past_key, past_value = layer_past
             key = torch.cat((past_key, key), dim=-2)
             value = torch.cat((past_value, value), dim=-2)
+        else:
+            attn_bias = xformers.ops.LowerTriangularMask()
 
+        # print(f"\nquery.mean(), key.mean(), value.mean(): ", query.mean().data, key.mean().data, value.mean().data)
+        # print(f"query.mean(), key.mean(), value.mean(): ", query.shape, key.shape, value.shape)
         if use_cache is True:
             present = (key, value)
         else:
@@ -337,14 +345,15 @@ class GPT2Attention(nn.Module):
         if self.reorder_and_upcast_attn:
             attn_output, attn_weights = self._upcast_and_reordered_attn(query, key, value, attention_mask, head_mask)
         else:
-            if  self._use_memory_efficient_attention_xformers and not attention_mask.mean() and not head_mask and not self.is_cross_attention:
-                batch_size, seq_len = query.size()[0], query.size()[2]
-                query = query.reshape(batch_size * self.num_heads, seq_len, self.head_dim)
-                key = key.reshape(batch_size * self.num_heads, seq_len, self.head_dim)
-                value = value.reshape(batch_size * self.num_heads, seq_len, self.head_dim)
-                attn_output = self._memory_efficient_attention_xformers(query, key, value, p=self.attn_pdrop)
-                attn_output = attn_output.reshape(attn_output.size()[0] // self.num_heads, self.num_heads, seq_len, self.head_dim)
+            if self._use_memory_efficient_attention_xformers:
+                batch_size, src_len, tgt_len = query.size()[0], query.size()[2], key.size()[2]
+                query = query.reshape(batch_size * self.num_heads, src_len, self.head_dim)
+                key = key.reshape(batch_size * self.num_heads, tgt_len, self.head_dim)
+                value = value.reshape(batch_size * self.num_heads, tgt_len, self.head_dim)
+                attn_output = self._memory_efficient_attention_xformers(query, key, value, attn_bias=attn_bias)
+                attn_output = attn_output.reshape(attn_output.size()[0] // self.num_heads, self.num_heads, -1, self.head_dim)
                 output_attentions = False
+
             else:
                 attn_output, attn_weights = self._attn(query, key, value, attention_mask, head_mask)
 
@@ -353,13 +362,14 @@ class GPT2Attention(nn.Module):
         attn_output = self.resid_dropout(attn_output)
 
         outputs = (attn_output, present)
+        # print(f"attn_output: {attn_output.shape, attn_output[0][0][0]}")
         if output_attentions:
             outputs += (attn_weights,)
 
         return outputs  # a, present, (attentions)
 
-    def _memory_efficient_attention_xformers(self, query, key, value, p=None):
-        hidden_states = xformers.ops.memory_efficient_attention(query, key, value, p=p)
+    def _memory_efficient_attention_xformers(self, query, key, value, attn_bias=None):
+        hidden_states = xformers.ops.memory_efficient_attention(query, key, value, attn_bias=attn_bias)
         return hidden_states
 
 class GPT2MLP(nn.Module):
