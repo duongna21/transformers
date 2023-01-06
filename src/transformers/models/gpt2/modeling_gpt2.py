@@ -341,7 +341,7 @@ class GPT2Attention(nn.Module):
                 query = query.permute(0, 2, 1, 3).contiguous()
                 key = key.permute(0, 2, 1, 3).contiguous()
                 value = value.permute(0, 2, 1, 3).contiguous()
-                attn_output = self._memory_efficient_attention_xformers(query, key, value, p=self.attn_pdrop)
+                attn_output = self._memory_efficient_attention_xformers(query, key, value, attn_bias=xformers.ops.LowerTriangularMask(), p=self.attn_pdrop)
                 attn_output = attn_output.permute(0, 2, 1, 3).contiguous()
                 output_attentions = False
             else:
@@ -357,8 +357,8 @@ class GPT2Attention(nn.Module):
 
         return outputs  # a, present, (attentions)
 
-    def _memory_efficient_attention_xformers(self, query, key, value, p=None):
-        hidden_states = xformers.ops.memory_efficient_attention(query, key, value, attn_bias=xformers.ops.LowerTriangularMask(), p=p)
+    def _memory_efficient_attention_xformers(self, query, key, value, attn_bias=None, p=0):
+        hidden_states = xformers.ops.memory_efficient_attention(query, key, value, attn_bias=attn_bias, p=p)
         return hidden_states
 
 class GPT2MLP(nn.Module):
