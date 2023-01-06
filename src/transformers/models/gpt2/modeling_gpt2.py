@@ -324,14 +324,10 @@ class GPT2Attention(nn.Module):
         key = self._split_heads(key, self.num_heads, self.head_dim)
         value = self._split_heads(value, self.num_heads, self.head_dim)
 
-
         if layer_past is not None:
-            attn_bias = None
             past_key, past_value = layer_past
             key = torch.cat((past_key, key), dim=-2)
             value = torch.cat((past_value, value), dim=-2)
-        else:
-            attn_bias = xformers.ops.LowerTriangularMask()
 
         if use_cache is True:
             present = (key, value)
@@ -341,13 +337,13 @@ class GPT2Attention(nn.Module):
         if self.reorder_and_upcast_attn:
             attn_output, attn_weights = self._upcast_and_reordered_attn(query, key, value, attention_mask, head_mask)
         else:
-            if self._use_memory_efficient_attention_xformers:
+            if  self._use_memory_efficient_attention_xformers:
                 batch_size, src_len, tgt_len = query.size()[0], query.size()[2], key.size()[2]
                 query = query.reshape(batch_size * self.num_heads, src_len, self.head_dim)
                 key = key.reshape(batch_size * self.num_heads, tgt_len, self.head_dim)
                 value = value.reshape(batch_size * self.num_heads, tgt_len, self.head_dim)
                 attn_output = self._memory_efficient_attention_xformers(query, key, value, p=self.attn_pdrop)
-                attn_output = attn_output.reshape(batch_size, self.num_heads, -1, self.head_dim)
+                attn_output = attn_output.reshape(attn_output.size()[0] // self.num_heads, self.num_heads, -1, self.head_dim)
                 output_attentions = False
 
             else:
@@ -358,12 +354,13 @@ class GPT2Attention(nn.Module):
         attn_output = self.resid_dropout(attn_output)
 
         outputs = (attn_output, present)
+        print(f"attn_output: {attn_output}")
         if output_attentions:
             outputs += (attn_weights,)
 
         return outputs  # a, present, (attentions)
 
-    def _memory_efficient_attention_xformers(self, query, key, value, attn_bias=None, p=0):
+    def _memory_efficient_attention_xformers(self, query, key, value, p=0):
         hidden_states = xformers.ops.memory_efficient_attention(query, key, value, attn_bias=xformers.ops.LowerTriangularMask(), p=p)
         return hidden_states
 
