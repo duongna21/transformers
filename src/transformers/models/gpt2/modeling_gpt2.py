@@ -324,13 +324,16 @@ class GPT2Attention(nn.Module):
         key = self._split_heads(key, self.num_heads, self.head_dim)
         value = self._split_heads(value, self.num_heads, self.head_dim)
 
-        print(f"\nlayer_past: ", layer_past)
+        print(f"\nquery.mean(), key.mean(), value.mean(): ", query.mean().data,
+              key.mean().data, value.mean().data)
 
         if layer_past is not None:
             past_key, past_value = layer_past
             key = torch.cat((past_key, key), dim=-2)
             value = torch.cat((past_value, value), dim=-2)
 
+        print(f"\nquery.mean(), key.mean(), value.mean(): ", query.mean().data,
+              key.mean().data, value.mean().data)
         if use_cache is True:
             present = (key, value)
         else:
