@@ -324,16 +324,16 @@ class GPT2Attention(nn.Module):
         key = self._split_heads(key, self.num_heads, self.head_dim)
         value = self._split_heads(value, self.num_heads, self.head_dim)
 
-        print(f"\nquery.mean(), key.mean(), value.mean(): ", self.is_cross_attention, query.mean().data, key.mean().data, value.mean().data)
-        print(f"query.mean(), key.mean(), value.mean(): ", query.shape, key.shape, value.shape)
+        # print(f"\nquery.mean(), key.mean(), value.mean(): ", self.is_cross_attention, query.mean().data, key.mean().data, value.mean().data)
+        # print(f"query.mean(), key.mean(), value.mean(): ", query.shape, key.shape, value.shape)
 
         if layer_past is not None:
             past_key, past_value = layer_past
             key = torch.cat((past_key, key), dim=-2)
             value = torch.cat((past_value, value), dim=-2)
 
-        print(f"\nquery.mean(), key.mean(), value.mean(): ", query.mean().data, key.mean().data, value.mean().data)
-        print(f"query.mean(), key.mean(), value.mean(): ", query.shape, key.shape, value.shape)
+        # print(f"\nquery.mean(), key.mean(), value.mean(): ", query.mean().data, key.mean().data, value.mean().data)
+        # print(f"query.mean(), key.mean(), value.mean(): ", query.shape, key.shape, value.shape)
         if use_cache is True:
             present = (key, value)
         else:
@@ -359,7 +359,7 @@ class GPT2Attention(nn.Module):
         attn_output = self.resid_dropout(attn_output)
 
         outputs = (attn_output, present)
-        print(f"attn_output: {attn_output.shape, attn_output[0][0][0]}")
+        # print(f"attn_output: {attn_output.shape, attn_output[0][0][0]}")
         if output_attentions:
             outputs += (attn_weights,)
 
