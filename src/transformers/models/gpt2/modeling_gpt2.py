@@ -324,7 +324,7 @@ class GPT2Attention(nn.Module):
         key = self._split_heads(key, self.num_heads, self.head_dim)
         value = self._split_heads(value, self.num_heads, self.head_dim)
 
-        print(f"\nquery.mean(), key.mean(), value.mean(): ", query.mean().data, key.mean().data, value.mean().data)
+        print(f"\nquery.mean(), key.mean(), value.mean(): ", self.is_cross_attention, query.mean().data, key.mean().data, value.mean().data)
         print(f"query.mean(), key.mean(), value.mean(): ", query.shape, key.shape, value.shape)
 
         if layer_past is not None:
