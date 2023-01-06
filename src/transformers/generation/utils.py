@@ -2135,7 +2135,6 @@ class GenerationMixin:
 
             # pre-process distribution
             next_tokens_scores = logits_processor(input_ids, next_token_logits)
-            print(f"next_tokens_scores: {next_tokens_scores, next_tokens_scores.shape}")
 
             # Store scores, attentions and hidden_states when required
             if return_dict_in_generate:
