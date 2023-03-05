@@ -727,11 +727,12 @@ class CLIPTextTransformer(nn.Module):
             attention_mask=attention_mask,
             causal_attention_mask=causal_attention_mask,
             output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
+            output_hidden_states=True,
             return_dict=return_dict,
         )
 
-        last_hidden_state = encoder_outputs[0]
+        # penultimate
+        last_hidden_state = encoder_outputs['hidden_states'][-2]
         last_hidden_state = self.final_layer_norm(last_hidden_state)
 
         # text_embeds.shape = [batch_size, sequence_length, transformer.width]
