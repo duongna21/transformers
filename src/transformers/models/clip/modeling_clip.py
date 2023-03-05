@@ -732,6 +732,7 @@ class CLIPTextTransformer(nn.Module):
         )
 
         # penultimate
+        print('penultimate!')
         last_hidden_state = encoder_outputs['hidden_states'][-2]
         last_hidden_state = self.final_layer_norm(last_hidden_state)
 
