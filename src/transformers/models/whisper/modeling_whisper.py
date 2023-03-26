@@ -1034,6 +1034,9 @@ class WhisperDecoder(WhisperPreTrainedModel):
         else:
             positions = self.embed_positions(inputs_embeds, past_key_values_length=past_key_values_length)
 
+        print("\n\ninputs_embeds.shape, positions.shape: ", inputs_embeds.shape, positions.shape)
+        print("\n\ninputs_embeds type, positions type: ", inputs_embeds.dtype, positions.dtype)
+        
         hidden_states = inputs_embeds + positions
         hidden_states = nn.functional.dropout(hidden_states, p=self.dropout, training=self.training)
 
