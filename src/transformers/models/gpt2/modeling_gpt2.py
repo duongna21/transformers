@@ -158,7 +158,9 @@ class GPT2Attention(nn.Module):
             self.c_attn = Conv1D(3 * self.embed_dim, self.embed_dim)
         self.c_proj = Conv1D(self.embed_dim, self.embed_dim)
 
+        self.attn_pdrop = config.attn_pdrop
         self.attn_dropout = nn.Dropout(config.attn_pdrop)
+        self.resid_pdrop = config.resid_pdrop
         self.resid_dropout = nn.Dropout(config.resid_pdrop)
 
         self.pruned_heads = set()
@@ -179,42 +181,48 @@ class GPT2Attention(nn.Module):
         self.pruned_heads = self.pruned_heads.union(heads)
 
     def _attn(self, query, key, value, attention_mask=None, head_mask=None):
-        attn_weights = torch.matmul(query, key.transpose(-1, -2))
-
-        if self.scale_attn_weights:
-            attn_weights = attn_weights / torch.full(
-                [], value.size(-1) ** 0.5, dtype=attn_weights.dtype, device=attn_weights.device
+        if True:
+            attn_output = nn.functional.scaled_dot_product_attention(
+                    query, key, value, attn_mask=attention_mask, dropout_p=self.attn_pdrop if self.training else 0.0, is_causal=True
             )
+            attn_weights = None
+        else:
+            attn_weights = torch.matmul(query, key.transpose(-1, -2))
 
-        # Layer-wise attention scaling
-        if self.scale_attn_by_inverse_layer_idx:
-            attn_weights = attn_weights / float(self.layer_idx + 1)
+            if self.scale_attn_weights:
+                attn_weights = attn_weights / torch.full(
+                    [], value.size(-1) ** 0.5, dtype=attn_weights.dtype, device=attn_weights.device
+                )
 
-        if not self.is_cross_attention:
-            # if only "normal" attention layer implements causal mask
-            query_length, key_length = query.size(-2), key.size(-2)
-            causal_mask = self.bias[:, :, key_length - query_length : key_length, :key_length]
-            mask_value = torch.finfo(attn_weights.dtype).min
-            # Need to be a tensor, otherwise we get error: `RuntimeError: expected scalar type float but found double`.
-            # Need to be on the same device, otherwise `RuntimeError: ..., x and y to be on the same device`
-            mask_value = torch.full([], mask_value, dtype=attn_weights.dtype).to(attn_weights.device)
-            attn_weights = torch.where(causal_mask, attn_weights.to(attn_weights.dtype), mask_value)
+            # Layer-wise attention scaling
+            if self.scale_attn_by_inverse_layer_idx:
+                attn_weights = attn_weights / float(self.layer_idx + 1)
 
-        if attention_mask is not None:
-            # Apply the attention mask
-            attn_weights = attn_weights + attention_mask
+            if not self.is_cross_attention:
+                # if only "normal" attention layer implements causal mask
+                query_length, key_length = query.size(-2), key.size(-2)
+                causal_mask = self.bias[:, :, key_length - query_length : key_length, :key_length]
+                mask_value = torch.finfo(attn_weights.dtype).min
+                # Need to be a tensor, otherwise we get error: `RuntimeError: expected scalar type float but found double`.
+                # Need to be on the same device, otherwise `RuntimeError: ..., x and y to be on the same device`
+                mask_value = torch.full([], mask_value, dtype=attn_weights.dtype).to(attn_weights.device)
+                attn_weights = torch.where(causal_mask, attn_weights.to(attn_weights.dtype), mask_value)
 
-        attn_weights = nn.functional.softmax(attn_weights, dim=-1)
+            if attention_mask is not None:
+                # Apply the attention mask
+                attn_weights = attn_weights + attention_mask
 
-        # Downcast (if necessary) back to V's dtype (if in mixed-precision) -- No-Op otherwise
-        attn_weights = attn_weights.type(value.dtype)
-        attn_weights = self.attn_dropout(attn_weights)
+            attn_weights = nn.functional.softmax(attn_weights, dim=-1)
 
-        # Mask heads if we want to
-        if head_mask is not None:
-            attn_weights = attn_weights * head_mask
+            # Downcast (if necessary) back to V's dtype (if in mixed-precision) -- No-Op otherwise
+            attn_weights = attn_weights.type(value.dtype)
+            attn_weights = self.attn_dropout(attn_weights)
 
-        attn_output = torch.matmul(attn_weights, value)
+            # Mask heads if we want to
+            if head_mask is not None:
+                attn_weights = attn_weights * head_mask
+
+            attn_output = torch.matmul(attn_weights, value)
 
         return attn_output, attn_weights
 

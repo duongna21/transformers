@@ -23,6 +23,7 @@ import torch
 import torch.utils.checkpoint
 from torch import nn
 from torch.nn import CrossEntropyLoss
+from torch.nn.functional as F
 
 from ...activations import ACT2FN
 from ...generation.logits_process import WhisperTimeStampLogitsProcessor
@@ -320,60 +321,67 @@ class WhisperAttention(nn.Module):
             # if encoder bi-directional self-attention `past_key_value` is always `None`
             past_key_value = (key_states, value_states)
 
-        proj_shape = (bsz * self.num_heads, -1, self.head_dim)
+        proj_shape = (bsz, self.num_heads, -1, self.head_dim)
         query_states = self._shape(query_states, tgt_len, bsz).view(*proj_shape)
         key_states = key_states.reshape(*proj_shape)
         value_states = value_states.reshape(*proj_shape)
-
-        src_len = key_states.size(1)
-        attn_weights = torch.bmm(query_states, key_states.transpose(1, 2))
-
-        if attn_weights.size() != (bsz * self.num_heads, tgt_len, src_len):
-            raise ValueError(
-                f"Attention weights should be of size {(bsz * self.num_heads, tgt_len, src_len)}, but is"
-                f" {attn_weights.size()}"
+   
+        if True:
+            attn_output = nn.functional.scaled_dot_product_attention(
+                query_states, key_states, value_states, attn_mask=attention_mask, dropout_p=self.dropout if self.training else 0.0, is_causal=self.is_decoder
             )
-
-        if attention_mask is not None:
-            if attention_mask.size() != (bsz, 1, tgt_len, src_len):
-                raise ValueError(
-                    f"Attention mask should be of size {(bsz, 1, tgt_len, src_len)}, but is {attention_mask.size()}"
-                )
-            attn_weights = attn_weights.view(bsz, self.num_heads, tgt_len, src_len) + attention_mask
-            attn_weights = attn_weights.view(bsz * self.num_heads, tgt_len, src_len)
-
-        attn_weights = nn.functional.softmax(attn_weights, dim=-1)
-
-        if layer_head_mask is not None:
-            if layer_head_mask.size() != (self.num_heads,):
-                raise ValueError(
-                    f"Head mask for a single layer should be of size {(self.num_heads,)}, but is"
-                    f" {layer_head_mask.size()}"
-                )
-            attn_weights = layer_head_mask.view(1, -1, 1, 1) * attn_weights.view(bsz, self.num_heads, tgt_len, src_len)
-            attn_weights = attn_weights.view(bsz * self.num_heads, tgt_len, src_len)
-
-        if output_attentions:
-            # this operation is a bit awkward, but it's required to
-            # make sure that attn_weights keeps its gradient.
-            # In order to do so, attn_weights have to be reshaped
-            # twice and have to be reused in the following
-            attn_weights_reshaped = attn_weights.view(bsz, self.num_heads, tgt_len, src_len)
-            attn_weights = attn_weights_reshaped.view(bsz * self.num_heads, tgt_len, src_len)
-        else:
             attn_weights_reshaped = None
+        else:
+            src_len = key_states.size(1)
+            attn_weights = torch.bmm(query_states, key_states.transpose(1, 2))
 
-        attn_probs = nn.functional.dropout(attn_weights, p=self.dropout, training=self.training)
+            if attn_weights.size() != (bsz * self.num_heads, tgt_len, src_len):
+                raise ValueError(
+                    f"Attention weights should be of size {(bsz * self.num_heads, tgt_len, src_len)}, but is"
+                    f" {attn_weights.size()}"
+                )
 
-        attn_output = torch.bmm(attn_probs, value_states)
+            if attention_mask is not None:
+                if attention_mask.size() != (bsz, 1, tgt_len, src_len):
+                    raise ValueError(
+                        f"Attention mask should be of size {(bsz, 1, tgt_len, src_len)}, but is {attention_mask.size()}"
+                    )
+                attn_weights = attn_weights.view(bsz, self.num_heads, tgt_len, src_len) + attention_mask
+                attn_weights = attn_weights.view(bsz * self.num_heads, tgt_len, src_len)
 
-        if attn_output.size() != (bsz * self.num_heads, tgt_len, self.head_dim):
-            raise ValueError(
-                f"`attn_output` should be of size {(bsz * self.num_heads, tgt_len, self.head_dim)}, but is"
-                f" {attn_output.size()}"
-            )
+            attn_weights = nn.functional.softmax(attn_weights, dim=-1)
 
-        attn_output = attn_output.view(bsz, self.num_heads, tgt_len, self.head_dim)
+            if layer_head_mask is not None:
+                if layer_head_mask.size() != (self.num_heads,):
+                    raise ValueError(
+                        f"Head mask for a single layer should be of size {(self.num_heads,)}, but is"
+                        f" {layer_head_mask.size()}"
+                    )
+                attn_weights = layer_head_mask.view(1, -1, 1, 1) * attn_weights.view(bsz, self.num_heads, tgt_len, src_len)
+                attn_weights = attn_weights.view(bsz * self.num_heads, tgt_len, src_len)
+
+            if output_attentions:
+                # this operation is a bit awkward, but it's required to
+                # make sure that attn_weights keeps its gradient.
+                # In order to do so, attn_weights have to be reshaped
+                # twice and have to be reused in the following
+                attn_weights_reshaped = attn_weights.view(bsz, self.num_heads, tgt_len, src_len)
+                attn_weights = attn_weights_reshaped.view(bsz * self.num_heads, tgt_len, src_len)
+            else:
+                attn_weights_reshaped = None
+
+            attn_probs = nn.functional.dropout(attn_weights, p=self.dropout, training=self.training)
+
+            attn_output = torch.bmm(attn_probs, value_states)
+
+            if attn_output.size() != (bsz * self.num_heads, tgt_len, self.head_dim):
+                raise ValueError(
+                    f"`attn_output` should be of size {(bsz * self.num_heads, tgt_len, self.head_dim)}, but is"
+                    f" {attn_output.size()}"
+                )
+
+            attn_output = attn_output.view(bsz, self.num_heads, tgt_len, self.head_dim)
+
         attn_output = attn_output.transpose(1, 2)
 
         # Use the `embed_dim` from the config (stored in the class) rather than `hidden_state` because `attn_output` can be
