@@ -23,7 +23,6 @@ import torch
 import torch.utils.checkpoint
 from torch import nn
 from torch.nn import CrossEntropyLoss
-from torch.nn.functional as F
 
 from ...activations import ACT2FN
 from ...generation.logits_process import WhisperTimeStampLogitsProcessor
