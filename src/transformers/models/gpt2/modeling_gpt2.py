@@ -182,8 +182,9 @@ class GPT2Attention(nn.Module):
 
     def _attn(self, query, key, value, attention_mask=None, head_mask=None):
         if True:
+            print("\n\nattention mask: ", attention_mask)
             attn_output = nn.functional.scaled_dot_product_attention(
-                    query, key, value, attn_mask=attention_mask, dropout_p=self.attn_pdrop if self.training else 0.0, is_causal=True
+                    query, key, value, attn_mask=None, dropout_p=self.attn_pdrop if self.training else 0.0, is_causal=True
             )
             attn_weights = None
         else:
